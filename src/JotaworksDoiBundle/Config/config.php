@@ -2,9 +2,9 @@
 
 return [
     'name'        => 'CO DOI',
-    'description' => 'Plugin which provides form doi actions',
-    'version'     => '1.0',
-    'author'      => 'Jotaworks',
+    'description' => 'Adds double-opt-in to your form actions',
+    'version'     => '1.2',
+    'author'      => 'JotaWORKS by Content Optimizer GmbH',
     'services' => [
         'events' => [
             'jw.mautic.email.formbundle.subscriber' => [
