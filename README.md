@@ -2,8 +2,6 @@
 
 Adds a robust and flexible way to add a double-opt-in process (DOI) to any form in Mautic.
 
-[Documentation in german](https://www.content-optimizer.de/)
-
 
 ## What is the plugin for?
 
@@ -63,10 +61,21 @@ That's it!
 
 
 ## FAQ
-- How do I manage multiple campaigns?
-- When will the email be sent?
-- How do you define a "successfull" opt-in?
-- What must the email look like?
+
+F: How do I manage multiple campaigns?<br>
+A: You can simply use a specific combination of tags for every campaign that you want to have its own DOI.
+
+F: When will the email be sent?<br>
+A: At the moment, the email will be sent every time the form is submitted.
+
+We think about ways to improve this. Maybe we should only send the email when the contact does not have the tags, that 
+we would add in the success case?
+
+F: How do you define a "successfull" opt-in?<br>
+When the user clicks the confirmation link, we assume that this is an success. 
+
+F: What must the email look like?<br>
+There are no special requirements, just add the merge tag {doi_url} to an link.
 
 
 ## Credits
