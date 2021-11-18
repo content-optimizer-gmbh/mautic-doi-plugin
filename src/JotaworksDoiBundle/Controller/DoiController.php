@@ -45,7 +45,8 @@ class DoiController extends FormController
                 die();
             }
             
-            $config = $encryptionHelper->decrypt($enc,true);
+            $enc = str_replace(array('-', '_'), array('+', '/'), $enc);                
+            $config = $encryptionHelper->decrypt($enc,true);                
             if(!$config ||!is_array($config))
             {
                 http_response_code(401);
