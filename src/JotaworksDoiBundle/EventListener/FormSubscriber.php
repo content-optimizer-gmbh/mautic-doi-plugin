@@ -161,6 +161,7 @@ class FormSubscriber implements EventSubscriberInterface
         ];
         
         $encData = $encryptionHelper->encrypt($data);
+	$encData = str_replace(array('+', '/'), array('-', '_'), $encData);
 
          $doiUrl = $this->factory->get('router')->generate(
             'jotaworks_doiauth_index',
