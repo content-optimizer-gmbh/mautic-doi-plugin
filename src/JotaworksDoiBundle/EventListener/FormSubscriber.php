@@ -174,7 +174,7 @@ class FormSubscriber implements EventSubscriberInterface
         //Send email             
         if (isset($leadFields['email'])) {
             $options = [
-                'source'    => ['form', $form->getId()],
+                'source'    => ['form', $event['id']],
                 'tokens'    => $tokens,
                 //todo: make this a flag configurable in formular actions
                 'ignoreDNC' => false,
