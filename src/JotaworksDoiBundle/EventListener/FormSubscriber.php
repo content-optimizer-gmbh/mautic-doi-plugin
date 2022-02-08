@@ -108,13 +108,16 @@ class FormSubscriber implements EventSubscriberInterface
      * @param Events\SubmissionEvent $event
      */
     public function onFormSubmitActionSendEmail(Events\SubmissionEvent $event)
-    {
+    {	    
+        if (!$event->checkContext('jw.email.send.lead')) {
+            return;
+        }	    
+	    
         $config    = $event->getActionConfig();
         $lead      = $event->getSubmission()->getLead();
         $leadEmail = $lead !== null ? $lead->getEmail() : null;
         $tokens    = $event->getTokens();
         $form       = $event->getForm();
-
         $emailId    = (int) $config['email'];
 
         /** @var \Mautic\EmailBundle\Model\EmailModel $emailModel */
@@ -124,10 +127,6 @@ class FormSubscriber implements EventSubscriberInterface
         /** @var \Mautic\LeadBundle\Model\LeadModel $leadModel */
         $leadModel = $this->factory->getModel('lead');
 	$contactTracker = $this->factory->get(ContactTracker::class);
-
-        if (!$event->checkContext('jw.email.send.lead')) {
-            return;
-        }
         
         //make sure the email still exists and is published
         if ($email === null || !$email->isPublished()) {
