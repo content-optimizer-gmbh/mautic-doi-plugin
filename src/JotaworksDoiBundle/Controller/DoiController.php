@@ -20,10 +20,17 @@ use Mautic\LeadBundle\Event\ContactIdentificationEvent;
 use Mautic\LeadBundle\LeadEvents;
             
 /**
- * Class IframePageController.
+ * Class DoiController.
  */
 class DoiController extends FormController
 {
+    /**
+    * BEFORE decoding base64 strin, call this function 
+    */
+    private function prepare_base64_url_decode($input) {
+     return strtr($input, '._-', '+/=');
+    }
+
     /**
      * @param string $enc
      * @return JsonResponse|\Symfony\Component\HttpFoundation\Response
@@ -45,8 +52,10 @@ class DoiController extends FormController
                 die();
             }
             
-            $enc = str_replace(array('-', '_'), array('+', '/'), $enc);                
-            $config = $encryptionHelper->decrypt($enc,true);                
+            //get base64 string
+            $base64 = $this->prepare_base64_url_decode($enc);
+            //decrypt string
+            $config = $encryptionHelper->decrypt($base64,true);
             if(!$config ||!is_array($config))
             {
                 http_response_code(401);

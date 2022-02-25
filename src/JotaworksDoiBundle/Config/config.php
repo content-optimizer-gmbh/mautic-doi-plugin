@@ -1,10 +1,10 @@
 <?php
 
 return [
-    'name'        => 'CO DOI',
-    'description' => 'Adds double-opt-in to your form actions',
-    'version'     => '1.2',
-    'author'      => 'JotaWORKS by Content Optimizer GmbH',
+    'name'        => 'Jotaworks Doi',
+    'description' => 'Plugin which provides form doi actions',
+    'version'     => '1.0',
+    'author'      => 'Jotaworks',
     'services' => [
         'events' => [
             'jw.mautic.email.formbundle.subscriber' => [
@@ -14,9 +14,9 @@ return [
                     'mautic.core.model.auditlog',
                     'mautic.helper.core_parameters',
                     'mautic.factory'
-                ],
+                ],                
             ],
-        ],
+        ],        
         'forms' => [
             'jw.mautic.form.type.jw_emailsend_list' => [
                 'class'     => \MauticPlugin\JotaworksDoiBundle\Form\Type\EmailSendType::class,
@@ -31,5 +31,5 @@ return [
                 'controller' => 'JotaworksDoiBundle:Doi:index'
             ]
         ]
-    ]
+    ]    
 ];

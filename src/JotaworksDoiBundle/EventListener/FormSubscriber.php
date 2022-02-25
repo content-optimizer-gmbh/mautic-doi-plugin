@@ -80,6 +80,13 @@ class FormSubscriber implements EventSubscriberInterface
         ];
     }
 
+    /**
+    * AFTER base64 encoding the string, call this function 
+    * to build a url safe string
+    */
+    private function prepare_base64_url_encode($input) {
+        return strtr($input, '+/=', '._-');
+    }  
 
     /**
      * Add a simple email form.
@@ -108,16 +115,17 @@ class FormSubscriber implements EventSubscriberInterface
      * @param Events\SubmissionEvent $event
      */
     public function onFormSubmitActionSendEmail(Events\SubmissionEvent $event)
-    {	    
+    {
         if (!$event->checkContext('jw.email.send.lead')) {
             return;
-        }	    
-	    
+        }
+
         $config    = $event->getActionConfig();
         $lead      = $event->getSubmission()->getLead();
         $leadEmail = $lead !== null ? $lead->getEmail() : null;
         $tokens    = $event->getTokens();
         $form       = $event->getForm();
+
         $emailId    = (int) $config['email'];
 
         /** @var \Mautic\EmailBundle\Model\EmailModel $emailModel */
@@ -126,8 +134,8 @@ class FormSubscriber implements EventSubscriberInterface
         
         /** @var \Mautic\LeadBundle\Model\LeadModel $leadModel */
         $leadModel = $this->factory->getModel('lead');
-	$contactTracker = $this->factory->get(ContactTracker::class);
-        
+	    $contactTracker = $this->factory->get(ContactTracker::class);
+
         //make sure the email still exists and is published
         if ($email === null || !$email->isPublished()) {
             return;
@@ -160,7 +168,7 @@ class FormSubscriber implements EventSubscriberInterface
         ];
         
         $encData = $encryptionHelper->encrypt($data);
-	$encData = str_replace(array('+', '/'), array('-', '_'), $encData);
+        $encData = $this->prepare_base64_url_encode($encData);
 
          $doiUrl = $this->factory->get('router')->generate(
             'jotaworks_doiauth_index',
@@ -168,12 +176,13 @@ class FormSubscriber implements EventSubscriberInterface
             UrlGeneratorInterface::ABSOLUTE_URL
         );
 
+        //build url safe string
         $tokens['{doi_url}'] = str_replace('|','%7C', $doiUrl);
 
         //Send email             
         if (isset($leadFields['email'])) {
             $options = [
-                'source'    => ['form', $event->getSubmission()->getId()],
+                'source'    => ['form', $event->getSubmission()->getId() ],
                 'tokens'    => $tokens,
                 //todo: make this a flag configurable in formular actions
                 'ignoreDNC' => false,
