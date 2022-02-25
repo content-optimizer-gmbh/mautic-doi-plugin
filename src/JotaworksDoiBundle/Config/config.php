@@ -3,7 +3,7 @@
 return [
     'name'        => 'Jotaworks Doi',
     'description' => 'Plugin which provides form doi actions',
-    'version'     => '1.0',
+    'version'     => '1.3',
     'author'      => 'Jotaworks',
     'services' => [
         'events' => [
