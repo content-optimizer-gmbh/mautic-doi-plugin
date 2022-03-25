@@ -1,0 +1,9 @@
+
+22.3.2022 
+
+Neue Features: 
+
+- Eigener DOI Report für Plugin 
+- Lead Felder vor und nach DOI setzen jetzt möglich
+- Do not Contact wird respektiert wenn manuell gesetzt oder von Bounce, aber nicht wenn er vom Benutzer kommt 
+- In den Lead Update Felder können die Platzhalter %ip% und %timestamp% genutzt werden (z.B. für DOI Logging in Lead Feldern)

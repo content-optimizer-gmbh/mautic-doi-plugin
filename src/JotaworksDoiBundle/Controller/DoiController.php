@@ -18,18 +18,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Cookie;
 use Mautic\LeadBundle\Event\ContactIdentificationEvent;
 use Mautic\LeadBundle\LeadEvents;
+use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
+use MauticPlugin\JotaworksDoiBundle\Helper\Base64Helper;
             
 /**
  * Class DoiController.
  */
 class DoiController extends FormController
 {
-    /**
-    * BEFORE decoding base64 strin, call this function 
-    */
-    private function prepare_base64_url_decode($input) {
-     return strtr($input, '._-', '+/=');
-    }
 
     /**
      * @param string $enc
@@ -53,7 +49,7 @@ class DoiController extends FormController
             }
             
             //get base64 string
-            $base64 = $this->prepare_base64_url_decode($enc);
+            $base64 = Base64Helper::prepare_base64_url_decode($enc);
             //decrypt string
             $config = $encryptionHelper->decrypt($base64,true);
             if(!$config ||!is_array($config))
@@ -79,8 +75,12 @@ class DoiController extends FormController
             
             $addTo      = (!empty($config['addToLists'])) ? $config['addToLists']: [];
             $removeFrom = (!empty($config['removeFromLists'])) ? $config['removeFromLists']: [];
+            $leadFieldUpdate = (!empty($config['leadFieldUpdate'])) ? $config['leadFieldUpdate']: [];
+            $leadFieldUpdateBefore = (!empty($config['leadFieldUpdateBefore'])) ? $config['leadFieldUpdateBefore']: [];
+
 
             //log doi to audit log
+            $ip = $ipLookupHelper->getIpAddressFromRequest();
             $config['leadEmail'] = $leadEmail;
             $log = [
                 'bundle'    => 'lead',
@@ -88,7 +88,7 @@ class DoiController extends FormController
                 'objectId'  => $leadId,
                 'action'    => 'confirm_doi',
                 'details'   => $config,
-                'ipAddress' => $ipLookupHelper->getIpAddressFromRequest(),
+                'ipAddress' => $ip,
             ];
             $auditLogModel->writeToLog($log);            
 
@@ -105,7 +105,16 @@ class DoiController extends FormController
             if (!empty($removeFrom)) {
                 $leadModel->removeFromLists($lead, $removeFrom);
             }       
-            
+
+            if( !empty($leadFieldUpdate) )
+            {
+                LeadHelper::leadFieldUpdate($leadFieldUpdate, $leadModel, $lead, $ip );               
+            }
+
+            //remove from do not contact after valid doi 
+            $model = $this->getModel('email');
+            $model->removeDoNotContact($leadEmail);            
+                        
             //identify lead in mautic 
             $clickthrough = ['leadId' => $leadId];
     

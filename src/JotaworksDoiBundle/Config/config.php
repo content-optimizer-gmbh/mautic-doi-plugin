@@ -3,7 +3,7 @@
 return [
     'name'        => 'Jotaworks Doi',
     'description' => 'Plugin which provides form doi actions',
-    'version'     => '1.3',
+    'version'     => '1.0',
     'author'      => 'Jotaworks',
     'services' => [
         'events' => [
@@ -16,6 +16,12 @@ return [
                     'mautic.factory'
                 ],                
             ],
+            'jw.mautic.email.report.doi' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\EventListener\DoiReportSubscriber::class,
+                'arguments' => [
+                    'mautic.lead.reportbundle.fields_builder',
+                ],
+            ],            
         ],        
         'forms' => [
             'jw.mautic.form.type.jw_emailsend_list' => [

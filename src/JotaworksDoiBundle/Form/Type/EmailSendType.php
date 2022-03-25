@@ -280,6 +280,34 @@ class EmailSendType extends AbstractType
                         ),
                     ],
                 ]
+            );   
+            
+            $builder->add(
+                'lead_field_update',
+                TextType::class,
+                [
+                    'label'      => 'jw.mautic.form.action.lead_field_update',
+                    'label_attr' => ['class' => 'control-label'],
+                    'attr'       => [
+                        'class'    => 'form-control'
+                    ],
+                    'constraints' => [
+                    ],
+                ]
+            );
+            
+            $builder->add(
+                'lead_field_update_before',
+                TextType::class,
+                [
+                    'label'      => 'jw.mautic.form.action.lead_field_update_before',
+                    'label_attr' => ['class' => 'control-label'],
+                    'attr'       => [
+                        'class'    => 'form-control'
+                    ],
+                    'constraints' => [
+                    ],
+                ]
             );            
     
            

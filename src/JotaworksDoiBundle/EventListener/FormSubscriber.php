@@ -25,6 +25,9 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Mautic\CoreBundle\Factory\MauticFactory;
 use Mautic\LeadBundle\Tracker\ContactTracker;
+use Mautic\LeadBundle\Entity\DoNotContact as DNC;
+use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
+use MauticPlugin\JotaworksDoiBundle\Helper\Base64Helper;
 
 /**
  * Class FormSubscriber.
@@ -79,15 +82,7 @@ class FormSubscriber implements EventSubscriberInterface
             ],
         ];
     }
-
-    /**
-    * AFTER base64 encoding the string, call this function 
-    * to build a url safe string
-    */
-    private function prepare_base64_url_encode($input) {
-        return strtr($input, '+/=', '._-');
-    }  
-
+ 
     /**
      * Add a simple email form.
      *
@@ -109,6 +104,49 @@ class FormSubscriber implements EventSubscriberInterface
         ];
 
         $event->addSubmitAction('jw.email.send.lead', $action);
+    }
+
+    private function leadFieldUpdate($leadFieldUpdate, $leadModel, $lead ) {
+        LeadHelper::leadFieldUpdate($leadFieldUpdate, $leadModel, $lead );
+    }   
+    
+    /**
+     * We would like to send the doi email if: 
+     * - there is no do not contact 
+     * or
+     * - if the do not contact is set by the user and not by a bounced mail or manually set
+     */
+    private function shouldEmailBeSended($lead) 
+    {
+
+        if( !$lead->getEmail() ) 
+        {
+            return false;
+        }
+
+        foreach ($lead->getDoNotContact() as $dnc) 
+        {
+            $reason = $dnc->getReason();
+            $channel = $dnc->getChannel();
+
+            if( DNC::UNSUBSCRIBE === $reason && $channel=="email" )
+            {
+                return true;
+            }
+
+            if( DNC::BOUNCED === $reason && $channel=="email" )
+            {
+                return false;
+            }
+
+            if( DNC::MANUAL === $reason && $channel=="email" )
+            {
+                return false;
+            }            
+
+        }    
+
+        return true;
     }
 
     /**
@@ -164,11 +202,12 @@ class FormSubscriber implements EventSubscriberInterface
             'add_tags' =>  $config['add_campaign_doi_success_tags'],
             'remove_tags' =>  $config['remove_tags_doi_success_tags'],
             'addToLists' =>  $config['add_campaign_doi_success_lists'],
-            'removeFromLists' =>  $config['remove_campaign_doi_success_lists']
+            'removeFromLists' =>  $config['remove_campaign_doi_success_lists'],
+            'leadFieldUpdate' => $config['lead_field_update']
         ];
         
         $encData = $encryptionHelper->encrypt($data);
-        $encData = $this->prepare_base64_url_encode($encData);
+        $encData = Base64Helper::prepare_base64_url_encode($encData);
 
          $doiUrl = $this->factory->get('router')->generate(
             'jotaworks_doiauth_index',
@@ -179,13 +218,21 @@ class FormSubscriber implements EventSubscriberInterface
         //build url safe string
         $tokens['{doi_url}'] = str_replace('|','%7C', $doiUrl);
 
+        //update lead field (if configured)
+        if( !empty($config['lead_field_update_before']) )
+        {
+            $this->leadFieldUpdate($config['lead_field_update_before'], $leadModel, $lead );               
+        }
+        
         //Send email             
-        if (isset($leadFields['email'])) {
+        if ($this->shouldEmailBeSended($lead) ) 
+        {            
             $options = [
                 'source'    => ['form', $event->getSubmission()->getId() ],
                 'tokens'    => $tokens,
                 //todo: make this a flag configurable in formular actions
-                'ignoreDNC' => false,
+                //we ignore DNC only if set by user wish
+                'ignoreDNC' => true,
             ];
             $emailModel->sendEmail($email, $currentLead, $options);
         } 
