@@ -12,14 +12,17 @@
 namespace MauticPlugin\JotaworksDoiBundle\Controller;
 
 use Mautic\AssetBundle\Entity\Asset;
+use Mautic\CampaignBundle\Entity\Event;
 use Mautic\CoreBundle\Controller\FormController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Cookie;
 use Mautic\LeadBundle\Event\ContactIdentificationEvent;
 use Mautic\LeadBundle\LeadEvents;
+use MauticPlugin\JotaworksDoiBundle\Event\DoiSuccessful;
 use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
 use MauticPlugin\JotaworksDoiBundle\Helper\Base64Helper;
+use MauticPlugin\JotaworksDoiBundle\DoiEvents;
             
 /**
  * Class DoiController.
@@ -120,6 +123,9 @@ class DoiController extends FormController
     
             $event = new ContactIdentificationEvent($clickthrough);
             $eventDispatcher->dispatch(LeadEvents::ON_CLICKTHROUGH_IDENTIFICATION, $event);
+            
+            $doiEvent = new DoiSuccessful($lead, $config);
+            $eventDispatcher->dispatch($doiEvent, DoiEvents::DOI_SUCCESSFUL);
     
             //track page hit in mautic 
             $this->request->request->set('page_url', $url);

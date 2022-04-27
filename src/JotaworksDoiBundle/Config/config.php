@@ -21,7 +21,13 @@ return [
                 'arguments' => [
                     'mautic.lead.reportbundle.fields_builder',
                 ],
-            ],            
+            ],
+            'jw.mautic.webhook.subscriber' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\EventListener\WebhookSubscriber::class,
+                'arguments' => [
+                    'mautic.webhook.model.webhook',
+                ],
+            ],           
         ],        
         'forms' => [
             'jw.mautic.form.type.jw_emailsend_list' => [
