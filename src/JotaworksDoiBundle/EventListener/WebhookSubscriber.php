@@ -8,6 +8,7 @@ use Mautic\WebhookBundle\WebhookEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 use MauticPlugin\JotaworksDoiBundle\DoiEvents;
+use MauticPlugin\JotaworksDoiBundle\Event\DoiStarted;
 use MauticPlugin\JotaworksDoiBundle\Event\DoiSuccessful;
 
 class WebhookSubscriber implements EventSubscriberInterface
@@ -28,6 +29,7 @@ class WebhookSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
+            DoiEvents::DOI_STARTED       => ['onDoiStarted', 0],
             DoiEvents::DOI_SUCCESSFUL       => ['onDoiSuccessful', 0],
             WebhookEvents::WEBHOOK_ON_BUILD => ['onWebhookBuild', 0],
         ];
@@ -38,7 +40,14 @@ class WebhookSubscriber implements EventSubscriberInterface
      */
     public function onWebhookBuild(WebhookBuilderEvent $event)
     {
-        $doiSuccessful= [
+        $doiStarted = [
+            'label'       => 'jw.doi.webhook.event.doi_started',
+            'description' => 'jw.doi.webhook.event.doi_started_desc',
+        ];
+
+        $event->addEvent(DoiEvents::DOI_STARTED, $doiStarted);
+        
+        $doiSuccessful = [
             'label'       => 'jw.doi.webhook.event.doi_successful',
             'description' => 'jw.doi.webhook.event.doi_successful_desc',
         ];
@@ -46,6 +55,24 @@ class WebhookSubscriber implements EventSubscriberInterface
         $event->addEvent(DoiEvents::DOI_SUCCESSFUL, $doiSuccessful);
     }
 
+    /**
+     * Just dispatches all data to our webhook.
+     *
+     * @param \Mautic\LeadBundle\Entity\Lead $lead
+     * @param array $config
+     * @return void
+     */
+    public function onDoiStarted(DoiStarted $event): void
+    {
+        $this->webhookModel->queueWebhooksByType(
+            DoiEvents::DOI_STARTED,
+            [
+                'lead' => $event->lead->convertToArray(),
+                'config' => $event->config,
+            ],
+        );
+    }
+    
     /**
      * Just dispatches all data to our webhook.
      *

@@ -17,6 +17,8 @@ namespace MauticPlugin\JotaworksDoiBundle;
  */
 final class DoiEvents
 {
+    const DOI_STARTED = 'mautic.doi_started';
+
     /**
      * The mautic.doi_successful event is dispatched right before a lead is persisted.
      *

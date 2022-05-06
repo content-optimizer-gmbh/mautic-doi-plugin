@@ -28,6 +28,8 @@ use Mautic\LeadBundle\Tracker\ContactTracker;
 use Mautic\LeadBundle\Entity\DoNotContact as DNC;
 use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
 use MauticPlugin\JotaworksDoiBundle\Helper\Base64Helper;
+use MauticPlugin\JotaworksDoiBundle\DoiEvents;
+use MauticPlugin\JotaworksDoiBundle\Event\DoiStarted;
 
 /**
  * Class FormSubscriber.
@@ -203,13 +205,20 @@ class FormSubscriber implements EventSubscriberInterface
             'remove_tags' =>  $config['remove_tags_doi_success_tags'],
             'addToLists' =>  $config['add_campaign_doi_success_lists'],
             'removeFromLists' =>  $config['remove_campaign_doi_success_lists'],
-            'leadFieldUpdate' => $config['lead_field_update']
+            'leadFieldUpdate' => $config['lead_field_update'],
+            'form_id' => $form->getId(),
+            'hash' => md5(uniqid()),
         ];
+
+        $eventDispatcher = $this->factory->get('event_dispatcher');
+
+        $doiEvent = new DoiStarted($lead, $data);
+        $eventDispatcher->dispatch($doiEvent, DoiEvents::DOI_STARTED);
         
         $encData = $encryptionHelper->encrypt($data);
         $encData = Base64Helper::prepare_base64_url_encode($encData);
 
-         $doiUrl = $this->factory->get('router')->generate(
+        $doiUrl = $this->factory->get('router')->generate(
             'jotaworks_doiauth_index',
             ['enc' => $encData],
             UrlGeneratorInterface::ABSOLUTE_URL
