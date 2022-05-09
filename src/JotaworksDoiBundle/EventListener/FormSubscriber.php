@@ -12,18 +12,12 @@
 namespace MauticPlugin\JotaworksDoiBundle\EventListener;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
-use Mautic\CoreBundle\Helper\IpLookupHelper;
-use Mautic\CoreBundle\Model\AuditLogModel;
-use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\FormBundle\Event as Events;
 use Mautic\FormBundle\Exception\ValidationException;
-use Mautic\FormBundle\Form\Type\SubmitActionRepostType;
 use Mautic\FormBundle\FormEvents;
 use Mautic\LeadBundle\Entity\Lead;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Mautic\CoreBundle\Factory\MauticFactory;
 use Mautic\LeadBundle\Tracker\ContactTracker;
 use Mautic\LeadBundle\Entity\DoNotContact as DNC;
 use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
@@ -37,39 +31,31 @@ use MauticPlugin\JotaworksDoiBundle\Event\DoiStarted;
 class FormSubscriber implements EventSubscriberInterface
 {
 
-    /**
-     * @var AuditLogModel
-     */
-    protected $auditLogModel;
-
-    /**
-     * @var IpLookupHelper
-     */
-    protected $ipLookupHelper;
-
-    /**
-     * @var CoreParametersHelper
-     */
-    protected $coreParametersHelper;
-
-    /**
-     * @var $factory
-     */
-    protected $factory;
+    protected $router;
+    
+    protected $eventDispatcher;
+    
+    protected $encryptionHelper;
+    
+    protected $emailModel;
+    
+    protected $leadModel;
+    
+    protected $contactTracker;
 
 
     /**
      * FormSubscriber constructor.
      *
-     * @param IpLookupHelper $ipLookupHelper
-     * @param AuditLogModel  $auditLogModel
      */
-    public function __construct(IpLookupHelper $ipLookupHelper, AuditLogModel $auditLogModel, CoreParametersHelper $coreParametersHelper, MauticFactory $factory)
+    public function __construct($router, $eventDispatcher, $encryptionHelper, $emailModel, $leadModel, ContactTracker $contactTracker)
     {
-        $this->ipLookupHelper       = $ipLookupHelper;
-        $this->auditLogModel        = $auditLogModel;
-        $this->coreParametersHelper = $coreParametersHelper;
-        $this->factory = $factory;
+        $this->router = $router;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->encryptionHelper = $encryptionHelper;
+        $this->emailModel = $emailModel;
+        $this->leadModel = $leadModel;
+        $this->contactTracker = $contactTracker;
     }
 
     /**
@@ -108,8 +94,14 @@ class FormSubscriber implements EventSubscriberInterface
         $event->addSubmitAction('jw.email.send.lead', $action);
     }
 
-    private function leadFieldUpdate($leadFieldUpdate, $leadModel, $lead ) {
-        LeadHelper::leadFieldUpdate($leadFieldUpdate, $leadModel, $lead );
+    private function leadFieldUpdate($config, $lead ) {
+
+        if( empty($config['lead_field_update_before']) )
+        {
+            return;
+        }
+
+        LeadHelper::leadFieldUpdate($config['lead_field_update_before'], $this->leadModel, $lead );
     }   
     
     /**
@@ -131,6 +123,7 @@ class FormSubscriber implements EventSubscriberInterface
             $reason = $dnc->getReason();
             $channel = $dnc->getChannel();
 
+            //user unsubscribed from email 
             if( DNC::UNSUBSCRIBE === $reason && $channel=="email" )
             {
                 return true;
@@ -151,38 +144,73 @@ class FormSubscriber implements EventSubscriberInterface
         return true;
     }
 
-    /**
-     * @param Events\SubmissionEvent $event
-     */
-    public function onFormSubmitActionSendEmail(Events\SubmissionEvent $event)
+    private function buildDoiConfirmUrl( $data ) 
     {
-        if (!$event->checkContext('jw.email.send.lead')) {
-            return;
-        }
+        $encData = $this->encryptConfig($data);
 
-        $config    = $event->getActionConfig();
-        $lead      = $event->getSubmission()->getLead();
-        $leadEmail = $lead !== null ? $lead->getEmail() : null;
-        $tokens    = $event->getTokens();
-        $form       = $event->getForm();
+        $doiUrl = $this->router->generate(
+            'jotaworks_doiauth_index',
+            ['enc' => $encData],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
 
-        $emailId    = (int) $config['email'];
+        return str_replace('|','%7C', $doiUrl);
+    }
 
-        /** @var \Mautic\EmailBundle\Model\EmailModel $emailModel */
-        $emailModel = $this->factory->getModel('email');
-        $email      = $emailModel->getEntity($emailId);
+    private function buildClickBaitUrl( $hash )
+    {
+        $url = $this->router->generate(
+            'jotaworks_doiauth_nothuman',
+            ['hash' => $hash],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        return $url;
+    }
+
+    /**
+     * Notify external systems via webhook 
+     */
+    private function fireWebhookEvent($lead, $data) 
+    {
+        $doiEvent = new DoiStarted($lead, $data);
+        $this->eventDispatcher->dispatch($doiEvent, DoiEvents::DOI_STARTED);
+    }
+
+    /**
+     * Encrypt the doi action config for successful doi 
+     */
+    private function encryptConfig($data) 
+    {
+        $encData = $this->encryptionHelper->encrypt($data);
+        return Base64Helper::prepare_base64_url_encode($encData);        
+    }
+
+    /**
+     * Prepare doi success url and replace lead tokens in the url (if any)
+     */
+    private function preparePostUrl($url, $tokens)
+    {
+        return str_replace( array_keys($tokens), array_values($tokens), urldecode($url));
+    }
+
+    private function sendDoiEmail($lead, $config, $doidata, $tokens, $submissionId)
+    {
+        if (!$this->shouldEmailBeSended($lead) ) 
+        {
+            return false;
+        } 
         
-        /** @var \Mautic\LeadBundle\Model\LeadModel $leadModel */
-        $leadModel = $this->factory->getModel('lead');
-	    $contactTracker = $this->factory->get(ContactTracker::class);
-
-        //make sure the email still exists and is published
+        $emailId    = (int) $config['email'];        
+        $email      = $this->emailModel->getEntity($emailId);
         if ($email === null || !$email->isPublished()) {
-            return;
-        }
-
-        $currentLead       = $contactTracker->getContact();
+            return false;
+        }        
+              
+        //prepare vars (feels like i should refactor this part)
+        $currentLead       = $this->contactTracker->getContact();
         if ($currentLead instanceof Lead) {
+
             //flatten the lead
             $lead        = $currentLead;
             $currentLead = [
@@ -191,60 +219,83 @@ class FormSubscriber implements EventSubscriberInterface
             $leadFields = $lead->getProfileFields();
 
             $currentLead = array_merge($currentLead, $leadFields);
-        }        
+        }             
 
-        //Replace Token in url (if any)        
-        $url = str_replace( array_keys($tokens), array_values($tokens), urldecode($config['post_url']));
+        //build doi url safe string
+        $tokens['{doi_url}'] = $this->buildDoiConfirmUrl( $doidata );
+        $tokens['{doi_nothuman}'] = $this->buildClickBaitUrl( $doidata['hash'] );
 
+        $options = [
+            'source'    => ['form', $submissionId ],
+            'tokens'    => $tokens,
+            //see function shouldEmailBeSended for criteria
+            'ignoreDNC' => true,
+        ];
+
+        $this->emailModel->sendEmail($email, $currentLead, $options);
+        
+    }
+
+    protected function shouldDoiProcessStart($lead, $data) 
+    {
+        //TODO: 
+        //check if any of: 
+            //add_tags
+            //remove_tags
+            //addToLists
+            //removeFromLists
+            //leadFieldUpdate
+
+
+        return true;
+    }
+
+    /**
+     * @param Events\SubmissionEvent $event
+     */
+    public function onFormSubmitActionSendEmail(Events\SubmissionEvent $event)
+    {
+        //only action if this is our form action
+        if (!$event->checkContext('jw.email.send.lead')) {
+            return;
+        }
+
+        $config    = $event->getActionConfig();
+        $lead      = $event->getSubmission()->getLead();
+        //$lead      = $this->contactTracker->getContact(); 
+        $tokens    = $event->getTokens();
+        $form      = $event->getForm();
+        $submissionId = $event->getSubmission()->getId();
+        $formId     = $form->getId();
+        $emailId    = (int) $config['email'];        
+               
         //Build doi confirm url 
-        $encryptionHelper = $this->factory->get('mautic.helper.encryption');
         $data = [
             'lead_id'  => $lead->getId(), 
-            'url' => $url,
+            'url' => $this->preparePostUrl($config['post_url'], $tokens ),
             'add_tags' =>  $config['add_campaign_doi_success_tags'],
             'remove_tags' =>  $config['remove_tags_doi_success_tags'],
             'addToLists' =>  $config['add_campaign_doi_success_lists'],
             'removeFromLists' =>  $config['remove_campaign_doi_success_lists'],
             'leadFieldUpdate' => $config['lead_field_update'],
-            'form_id' => $form->getId(),
-            'hash' => md5(uniqid()),
+            'form_id' => $formId,
+            'hash' => md5(uniqid())
         ];
 
-        $eventDispatcher = $this->factory->get('event_dispatcher');
-
-        $doiEvent = new DoiStarted($lead, $data);
-        $eventDispatcher->dispatch($doiEvent, DoiEvents::DOI_STARTED);
-        
-        $encData = $encryptionHelper->encrypt($data);
-        $encData = Base64Helper::prepare_base64_url_encode($encData);
-
-        $doiUrl = $this->factory->get('router')->generate(
-            'jotaworks_doiauth_index',
-            ['enc' => $encData],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
-
-        //build url safe string
-        $tokens['{doi_url}'] = str_replace('|','%7C', $doiUrl);
-
-        //update lead field (if configured)
-        if( !empty($config['lead_field_update_before']) )
+        //Check if doi should start 
+        if( !$this->shouldDoiProcessStart($lead, $data) )
         {
-            $this->leadFieldUpdate($config['lead_field_update_before'], $leadModel, $lead );               
-        }
-        
-        //Send email             
-        if ($this->shouldEmailBeSended($lead) ) 
-        {            
-            $options = [
-                'source'    => ['form', $event->getSubmission()->getId() ],
-                'tokens'    => $tokens,
-                //todo: make this a flag configurable in formular actions
-                //we ignore DNC only if set by user wish
-                'ignoreDNC' => true,
-            ];
-            $emailModel->sendEmail($email, $currentLead, $options);
+            return;
         } 
+        
+        //Update lead field (if configured)
+        $this->leadFieldUpdate($config, $lead );                       
+        
+        //Send double optin email             
+        $this->sendDoiEmail($lead, $config, $data, $tokens, $submissionId);
+
+        //Notify mautic webhooks (if any)
+        $this->fireWebhookEvent($lead, $data);
 
     }
 
