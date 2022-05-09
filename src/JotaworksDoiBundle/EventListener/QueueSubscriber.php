@@ -30,7 +30,7 @@ class QueueSubscriber implements EventSubscriberInterface
     private $logger;
 
 
-    protected $secondsToWait = 2*60;
+    protected $secondsToWait = 1*60;
 
     /**
      * QueueSubscriber constructor.
@@ -103,19 +103,19 @@ class QueueSubscriber implements EventSubscriberInterface
         // Also reject messages when processing causes any other exception.
         try {
 
-            //check if doi should be canceled (some process clicked on the bait link)
-            if( $this->checkIfDoiCancel($config) ) 
-            {
-                //we remove doi from working queue without setting any thing 
-                $event->setResult(QueueConsumerResults::ACKNOWLEDGE);
-                return;
-            }
-
             //check if event should be processed now or defer processing
             if( !$this->waitForProcessingTime($doiActivationTime) )
             {
                 //we defer processing this doi confirmation until we waited for xx minutes
                 $event->setResult(QueueConsumerResults::TEMPORARY_REJECT);
+                return;
+            }
+
+            //check if doi should be canceled (some process clicked on the bait link)
+            if( $this->checkIfDoiCancel($config) ) 
+            {
+                //we remove doi from working queue without setting any thing 
+                $event->setResult(QueueConsumerResults::ACKNOWLEDGE);
                 return;
             }
         
