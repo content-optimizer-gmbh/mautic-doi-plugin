@@ -277,7 +277,7 @@ class FormSubscriber implements EventSubscriberInterface
             'remove_tags' =>  $config['remove_tags_doi_success_tags'],
             'addToLists' =>  $config['add_campaign_doi_success_lists'],
             'removeFromLists' =>  $config['remove_campaign_doi_success_lists'],
-            'leadFieldUpdate' => isset($config['lead_field_update']) ? $config['lead_field_update'] : null,
+            'leadFieldUpdate' => isset($config['lead_field_update']) ? $config['lead_field_update']:null,
             'form_id' => $formId,
             'hash' => md5(uniqid())
         ];

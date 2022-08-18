@@ -127,13 +127,16 @@ class QueueSubscriber implements EventSubscriberInterface
 
         } catch (\Exception $e) {
 
-            $event->setResult(QueueConsumerResults::REJECT);
+            $event->setResult(QueueConsumerResults::TEMPORARY_REJECT);
 
             // Log the exception with event payload as context.
             if ($this->logger) {
+
+                $logPayload = $payload;
+                unset($logPayload['request']);
                 $this->logger->addError(
-                    'QUEUE CONSUMER ERROR ('.QueueEvents::DOI_SUCCESSFUL.'): '.$e->getMessage(),
-                    $payload
+                    'QUEUE CONSUMER ERROR => TEMPORARY_REJECT Details: ('.QueueEvents::DOI_SUCCESSFUL.'): '.$e->getMessage(),
+                    $logPayload
                 );
             }
         }
