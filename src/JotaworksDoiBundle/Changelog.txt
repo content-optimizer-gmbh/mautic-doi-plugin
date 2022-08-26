@@ -1,9 +1,16 @@
+# CHANGELOG
 
-22.3.2022 
+- Cleanup and completition of translations
 
-Neue Features: 
+Version 1.4.0   09.05.2022
+- NEW DNC email sending
+- NEW Update lead field values before/after successfull confirmation
+- NEW Webhook for DOI start and finish events
+- NEW Protection against malevolent email threads scanner (ACP: Advanced Thread Protection von Microsoft)
+- NEW Behavioral based protection against problematic malware scanners
 
-- Eigener DOI Report für Plugin 
+Version 1.3.0   22.03.2022
+- Eigener DOI Report für Plugin
 - Lead Felder vor und nach DOI setzen jetzt möglich
-- Do not Contact wird respektiert wenn manuell gesetzt oder von Bounce, aber nicht wenn er vom Benutzer kommt 
+- Do not Contact wird respektiert wenn manuell gesetzt oder von Bounce, aber nicht wenn er vom Benutzer kommt
 - In den Lead Update Felder können die Platzhalter %ip% und %timestamp% genutzt werden (z.B. für DOI Logging in Lead Feldern)
