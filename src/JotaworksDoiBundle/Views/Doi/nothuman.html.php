@@ -1,1 +1,1 @@
-Anmeldung abgebrochen
+No human detected. Stopping doi process 

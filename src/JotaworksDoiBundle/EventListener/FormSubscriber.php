@@ -113,11 +113,6 @@ class FormSubscriber implements EventSubscriberInterface
     private function shouldEmailBeSended($lead) 
     {
 
-        if( !$lead->getEmail() ) 
-        {
-            return false;
-        }
-
         foreach ($lead->getDoNotContact() as $dnc) 
         {
             $reason = $dnc->getReason();
@@ -196,6 +191,7 @@ class FormSubscriber implements EventSubscriberInterface
 
     private function sendDoiEmail($lead, $config, $doidata, $tokens, $submissionId)
     {
+
         if (!$this->shouldEmailBeSended($lead) ) 
         {
             return false;
@@ -219,8 +215,8 @@ class FormSubscriber implements EventSubscriberInterface
             $leadFields = $lead->getProfileFields();
 
             $currentLead = array_merge($currentLead, $leadFields);
-        }             
-
+        }  
+        
         //build doi url safe string
         $tokens['{doi_url}'] = $this->buildDoiConfirmUrl( $doidata );
         $tokens['{doi_nothuman}'] = $this->buildClickBaitUrl( $doidata['hash'] );
@@ -232,20 +228,26 @@ class FormSubscriber implements EventSubscriberInterface
             'ignoreDNC' => true,
         ];
 
+        //if email address is empty we take email_validate as email address  
+        if( !$currentLead['email'] && isset($currentLead['email_validate']) && $currentLead['email_validate'] )
+        {
+            $currentLead['email'] = $currentLead['email_validate'];
+        }
+
         $this->emailModel->sendEmail($email, $currentLead, $options);
         
     }
 
-    protected function shouldDoiProcessStart($lead, $data) 
+    protected function shouldDoiProcessStart($lead, $data, $submissionId) 
     {
-        //TODO: 
-        //check if any of: 
-            //add_tags
-            //remove_tags
-            //addToLists
-            //removeFromLists
-            //leadFieldUpdate
-
+        //TODO: Implement rate limiting based on  
+        // form submit table and see if: 
+        //  - sender ip address + time reaches limit 
+        //  - sender ip address + form id + time reaches limit 
+        //  - email address + form id + time reaches limit
+        // 
+        // + make limits configurable in plugin settings 
+        // OR: make this a generic anti form spam plugin! 
 
         return true;
     }
@@ -261,8 +263,7 @@ class FormSubscriber implements EventSubscriberInterface
         }
 
         $config    = $event->getActionConfig();
-        $lead      = $event->getSubmission()->getLead();
-        //$lead      = $this->contactTracker->getContact(); 
+        $lead      = $event->getSubmission()->getLead(); 
         $tokens    = $event->getTokens();
         $form      = $event->getForm();
         $submissionId = $event->getSubmission()->getId();
@@ -277,13 +278,13 @@ class FormSubscriber implements EventSubscriberInterface
             'remove_tags' =>  $config['remove_tags_doi_success_tags'],
             'addToLists' =>  $config['add_campaign_doi_success_lists'],
             'removeFromLists' =>  $config['remove_campaign_doi_success_lists'],
-            'leadFieldUpdate' => isset($config['lead_field_update']) ? $config['lead_field_update']:null,
+            'leadFieldUpdate' => $config['lead_field_update'],
             'form_id' => $formId,
             'hash' => md5(uniqid())
         ];
 
         //Check if doi should start 
-        if( !$this->shouldDoiProcessStart($lead, $data) )
+        if( !$this->shouldDoiProcessStart($lead, $data, $submissionId) )
         {
             return;
         } 
