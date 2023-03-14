@@ -308,7 +308,21 @@ class EmailSendType extends AbstractType
                     'constraints' => [
                     ],
                 ]
-            );            
+            );   
+            
+            $builder->add(
+                'alternative_email_field',
+                TextType::class,
+                [
+                    'label'      => 'jw.mautic.form.action.alternative_email_field',
+                    'label_attr' => ['class' => 'control-label'],
+                    'attr'       => [
+                        'class'    => 'form-control'
+                    ],
+                    'constraints' => [
+                    ],
+                ]
+            );
     
            
         }

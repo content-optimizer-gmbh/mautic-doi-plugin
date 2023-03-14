@@ -12,20 +12,39 @@ class LeadHelper {
             return;
         }
 
-        $leadValueConfigs = explode(',',$leadFieldUpdate );                    
-                
+        //get lead field configs 
+        $leadValueConfigs = explode(',',$leadFieldUpdate );   
+        
+        //get current lead fields and values
         $leadFields = $lead->getFields(true);
+
         $leadValues = [];
         foreach($leadValueConfigs as $leadValueConfig)
         {
             list($leadFieldAlias, $leadFieldValue) = array_merge( explode( '=', $leadValueConfig ), array( true ) );
 
+            // we replace tokens if any
             if($leadFieldAlias && $leadFieldValue)
             {
 
+                //if $leadFieldValue is token then replace with current lead field value
+                if( preg_match('/\{.*\}/', $leadFieldValue) )
+                {
+                    $tokenAlias = str_replace(['{','}'],'',$leadFieldValue);
+                    if(isset($leadFields[ $tokenAlias ])) {
+                        $leadFieldValue = $leadFields[$tokenAlias]['normalizedValue'];
+                    }
+                }
+
                 $timestring = date("d.m.Y H:i:s");
-                $leadFieldValue = str_replace('%ip%', $ip, $leadFieldValue);
-                $leadFieldValue = str_replace('%timestamp%', $timestring, $leadFieldValue);
+                
+                //generate token 
+                $token = openssl_random_pseudo_bytes(16);
+                bin2hex($token);
+
+                $leadFieldValue = str_replace('{doi_ip}', $ip, $leadFieldValue);
+                $leadFieldValue = str_replace('{doi_timestamp}', $timestring, $leadFieldValue);
+                $leadFieldValue = str_replace('{tokenid}', $token, $leadFieldValue);
 
                 $leadValues[$leadFieldAlias] = $leadFieldValue;
             }
