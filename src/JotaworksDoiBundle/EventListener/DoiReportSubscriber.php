@@ -19,6 +19,7 @@ use Mautic\ReportBundle\Event\ReportDataEvent;
 use Mautic\ReportBundle\ReportEvents;
 use MauticPlugin\MauticCustomReportBundle\Entity\CustomCreatedContactLog;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use MauticPlugin\JotaworksDoiBundle\Integration\Config;
 
 class DoiReportSubscriber implements EventSubscriberInterface
 {
@@ -30,11 +31,17 @@ class DoiReportSubscriber implements EventSubscriberInterface
     private $fieldsBuilder;
 
     /**
+     * @var Config
+     */
+    private $bundleConfig;
+
+    /**
      * @param FieldsBuilder $fieldsBuilder
      */
-    public function __construct(FieldsBuilder $fieldsBuilder)
+    public function __construct(FieldsBuilder $fieldsBuilder, Config $bundleConfig)
     {
         $this->fieldsBuilder = $fieldsBuilder;
+        $this->bundleConfig = $bundleConfig;
     }
 
     /**
@@ -56,6 +63,10 @@ class DoiReportSubscriber implements EventSubscriberInterface
      */
     public function onReportBuilder(ReportBuilderEvent $event)
     {
+        if(!$this->bundleConfig->isPublished()) {
+            return;
+        }
+
         if (!$event->checkContext([self::REPORT_NAME])) {
             return;
         }
@@ -95,6 +106,10 @@ class DoiReportSubscriber implements EventSubscriberInterface
      */
     public function onReportGenerate(ReportGeneratorEvent $event)
     {
+        if(!$this->bundleConfig->isPublished()) {
+            return;
+        }
+
         if (!$event->checkContext([self::REPORT_NAME])) {
             return;
         }
@@ -123,6 +138,10 @@ class DoiReportSubscriber implements EventSubscriberInterface
 
     public function onReportDisplay(ReportDataEvent $event)
     {
+        if(!$this->bundleConfig->isPublished()) {
+            return;
+        }
+
         if (!$event->checkContext([self::REPORT_NAME])) {
             return;
         }

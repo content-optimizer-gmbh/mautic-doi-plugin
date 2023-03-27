@@ -17,6 +17,7 @@ use MauticPlugin\JotaworksDoiBundle\Helper\DoiActionHelper;
 use Mautic\QueueBundle\Queue\QueueConsumerResults;
 use Symfony\Bridge\Monolog\Logger;
 use Mautic\QueueBundle\Event\QueueConsumerEvent;
+use MauticPlugin\JotaworksDoiBundle\Integration\Config;
 
 /**
  * Class FormSubscriber.
@@ -29,18 +30,23 @@ class QueueSubscriber implements EventSubscriberInterface
      */
     private $logger;
 
-
     protected $secondsToWait = 1*60;
+
+    /**
+     * @var Config
+     */
+    private $bundleConfig;
 
     /**
      * QueueSubscriber constructor.
      * 
      */
-    public function __construct(Logger $logger, DoiActionHelper $doiActionHelper, $notHumanClickHelper)
+    public function __construct(Logger $logger, DoiActionHelper $doiActionHelper, $notHumanClickHelper, Config $bundleConfig)
     {
         $this->logger = $logger;        
         $this->doiActionHelper = $doiActionHelper;
         $this->notHumanClickHelper = $notHumanClickHelper; 
+        $this->bundleConfig = $bundleConfig;
     }
 
     /**
@@ -94,7 +100,10 @@ class QueueSubscriber implements EventSubscriberInterface
  
     public function onDoiSuccessful(QueueConsumerEvent $event) 
     {
-        
+        if(!$this->bundleConfig->isPublished()) {
+            return;
+        }
+
         $payload = $event->getPayload();
         $config = $payload['config'];
         $doiActivationTime = $payload['doiActivationTime'];

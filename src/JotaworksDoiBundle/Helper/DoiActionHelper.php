@@ -7,6 +7,7 @@ use Mautic\LeadBundle\LeadEvents;
 use MauticPlugin\JotaworksDoiBundle\Event\DoiSuccessful;
 use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
 use MauticPlugin\JotaworksDoiBundle\DoiEvents;
+use MauticPlugin\JotaworksDoiBundle\Integration\Config;
 
 
 class DoiActionHelper {
@@ -23,10 +24,14 @@ class DoiActionHelper {
 
     protected $leadModel;
 
-    protected $request; 
+    protected $request;
 
+    /**
+     * @var Config
+     */
+    private $bundleConfig;
 
-    public function __construct($eventDispatcher, $ipLookupHelper, $pageModel, $emailModel, $auditLogModel, $leadModel, $request ) 
+    public function __construct($eventDispatcher, $ipLookupHelper, $pageModel, $emailModel, $auditLogModel, $leadModel, $request, Config $bundleConfig) 
     {
         $this->eventDispatcher = $eventDispatcher;
         $this->ipLookupHelper = $ipLookupHelper;
@@ -35,6 +40,7 @@ class DoiActionHelper {
         $this->auditLogModel = $auditLogModel;
         $this->leadModel = $leadModel;
         $this->request = $request->getCurrentRequest();
+        $this->bundleConfig = $bundleConfig;
     }
 
     public function setRequest($request)
@@ -42,14 +48,17 @@ class DoiActionHelper {
         $this->request = $request;
     }    
 
-    public function applyDoiActions($config) 
+    public function applyDoiActions($config, $confirmed = false) 
     {
-        $this->logDoiSuccess($config);            
         $this->updateLead($config);
-        $this->removeDNC($config['leadEmail']);           
-        $this->identifyLead($config['lead_id']);          
+        $this->identifyLead($config['lead_id']);
         $this->trackPageHit($config);
         $this->fireWebhook($config);
+
+        if (!$confirmed) {
+            $this->logDoiSuccess($config);
+            $this->removeDNC($config['leadEmail']);
+        }
     }
 
     public function fireWebhook($config) 
@@ -145,6 +154,21 @@ class DoiActionHelper {
         {
             $ip = $this->ipLookupHelper->getIpAddressFromRequest();            
             LeadHelper::leadFieldUpdate($leadFieldUpdate, $this->leadModel, $lead, $ip );               
+        }
+
+        // Confirm the opt-in status
+        $this->setSuccessStatus($lead, $config);
+    }
+
+    public function setSuccessStatus($lead, $config): void
+    {
+        $optinStatusField = $config['optinStatusField'];
+        $optinSuccessValue = $config['optinSuccessValue'];
+
+        // Update opt-in status field
+        if (!empty($optinStatusField) && !empty($optinSuccessValue)) {
+            $this->leadModel->setFieldValues($lead, [$optinStatusField => $optinSuccessValue], false);
+            $this->leadModel->saveEntity($lead);
         }
     }
 
