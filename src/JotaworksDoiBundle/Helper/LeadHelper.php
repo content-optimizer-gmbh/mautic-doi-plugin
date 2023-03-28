@@ -103,9 +103,7 @@ class LeadHelper {
         $q->select('lead_lists_leads.leadlist_id')
             ->from(MAUTIC_TABLE_PREFIX.'lead_lists_leads')
             ->where(
-                $q->expr()->andX(
-                    $q->expr()->eq('lead_lists_leads.lead_id', ':contactId')
-                )
+                $q->expr()->eq('lead_lists_leads.lead_id', ':contactId')
             )
             ->setParameter('contactId', $contactId);
 
