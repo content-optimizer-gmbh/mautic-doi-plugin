@@ -64,6 +64,7 @@ return [
                     'mautic.core.model.auditlog',
                     'mautic.lead.model.lead',
                     'request_stack',
+                    'jw.doi.leadhelper',
                     'jotaworksdoi.config'
                 ]
             ],

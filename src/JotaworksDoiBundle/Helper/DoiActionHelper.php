@@ -27,11 +27,16 @@ class DoiActionHelper {
     protected $request;
 
     /**
+     * @var LeadHelper
+     */
+    private $leadHelper;
+
+    /**
      * @var Config
      */
     private $bundleConfig;
 
-    public function __construct($eventDispatcher, $ipLookupHelper, $pageModel, $emailModel, $auditLogModel, $leadModel, $request, Config $bundleConfig) 
+    public function __construct($eventDispatcher, $ipLookupHelper, $pageModel, $emailModel, $auditLogModel, $leadModel, $request, LeadHelper $leadHelper, Config $bundleConfig) 
     {
         $this->eventDispatcher = $eventDispatcher;
         $this->ipLookupHelper = $ipLookupHelper;
@@ -40,6 +45,7 @@ class DoiActionHelper {
         $this->auditLogModel = $auditLogModel;
         $this->leadModel = $leadModel;
         $this->request = $request->getCurrentRequest();
+        $this->leadHelper = $leadHelper;
         $this->bundleConfig = $bundleConfig;
     }
 
@@ -152,8 +158,8 @@ class DoiActionHelper {
         //Update lead value (if any)
         if( !empty($leadFieldUpdate) )
         {
-            $ip = $this->ipLookupHelper->getIpAddressFromRequest();            
-            LeadHelper::leadFieldUpdate($leadFieldUpdate, $this->leadModel, $lead, $ip );               
+            $ip = $this->ipLookupHelper->getIpAddressFromRequest();
+            $this->leadHelper->leadFieldUpdate($leadFieldUpdate, $this->leadModel, $lead, $ip);
         }
 
         // Confirm the opt-in status
