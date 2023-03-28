@@ -111,6 +111,10 @@ class LeadHelper {
 
         $leadLists = $q->execute()->fetchFirstColumn();
 
+        if (!is_array($leadLists)) {
+            return [];
+        }
+
         return $leadLists;
     }
 

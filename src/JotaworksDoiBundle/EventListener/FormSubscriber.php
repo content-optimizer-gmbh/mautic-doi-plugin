@@ -347,7 +347,6 @@ class FormSubscriber implements EventSubscriberInterface
 
         // Get lists (segments) assigned to the lead
         $leadLists = $this->leadHelper->getLeadLists($lead->getId());
-        $leadLists = (!empty($leadLists)) ? $leadLists : [];
 
         // Check if lead has all tags assigned
         if (in_array('tags', $treatAsConfirmed)) {
