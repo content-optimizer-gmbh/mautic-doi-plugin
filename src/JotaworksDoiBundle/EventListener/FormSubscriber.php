@@ -19,7 +19,7 @@ use Mautic\LeadBundle\Entity\Lead;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Mautic\LeadBundle\Tracker\ContactTracker;
-use Mautic\LeadBundle\Entity\DoNotContact as DNC;
+use MauticPlugin\JotaworksDoiBundle\Entity\DoNotContact as DNC;
 use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
 use MauticPlugin\JotaworksDoiBundle\Helper\Base64Helper;
 use MauticPlugin\JotaworksDoiBundle\Helper\DoiActionHelper;

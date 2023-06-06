@@ -52,8 +52,7 @@ class LeadHelper {
                 $timestring = date("d.m.Y H:i:s");
                 
                 //generate token 
-                $token = openssl_random_pseudo_bytes(16);
-                bin2hex($token);
+                $token = bin2hex(openssl_random_pseudo_bytes(16));
 
                 $leadFieldValue = str_replace('{doi_ip}', $ip, $leadFieldValue);
                 $leadFieldValue = str_replace('{doi_timestamp}', $timestring, $leadFieldValue);
@@ -70,7 +69,7 @@ class LeadHelper {
         }
 
     }
-
+  
     public function getDoNotContactStatus(int $contactId, string $channel): int
     {
         $q = $this->connection->createQueryBuilder();
