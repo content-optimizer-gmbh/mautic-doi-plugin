@@ -27,9 +27,10 @@ The current version was tested with Mautic 3.3. Support for Mautic 4 is on the w
 
 1. Donwload the ZIP file
 2. Extract it to a local directory
-3. Upload the contents to your Mautic into /plugins
-4. Navigate to the Plugins page
-5. Click "Refresh / Install plugin"
+3. Upload the contents from the /src Directory to your Mautic into /plugins (src/JotaworksDoiBundle to /plugins/JotaworksDoiBundle)
+4. Clear the mautic cache 
+5. Navigate to the Plugins page
+6. Click "Refresh / Install plugin"
 
 Done! The plugin should now appear in the list of plugins.
 
