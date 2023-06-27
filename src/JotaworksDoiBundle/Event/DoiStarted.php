@@ -2,7 +2,9 @@
 
 namespace MauticPlugin\JotaworksDoiBundle\Event;
 
-class DoiStarted extends \Symfony\Contracts\EventDispatcher\Event
+use Mautic\CoreBundle\Event\CommonEvent;
+
+class DoiStarted extends CommonEvent
 {
     /**
      * Undocumented variable
