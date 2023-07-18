@@ -23,7 +23,7 @@ In short: It helps you to implement a simple and reliable method to collect opt-
 
 ## How to Install
 
-The current version was tested with Mautic 3.3. Support for Mautic 4 is on the way.
+The current version was tested with Mautic 4.4.5
 
 1. Donwload the ZIP file
 2. Extract it to a local directory
