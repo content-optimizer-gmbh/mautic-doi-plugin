@@ -119,7 +119,7 @@ class FormSubscriber implements EventSubscriberInterface
             $channel = $dnc->getChannel();
 
             //user unsubscribed from email 
-            if( DNC::UNSUBSCRIBE === $reason && $channel=="email" )
+            if( DNC::UNSUBSCRIBED === $reason && $channel=="email" )
             {
                 return true;
             }
