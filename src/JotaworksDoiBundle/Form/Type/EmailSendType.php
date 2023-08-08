@@ -17,6 +17,7 @@ use Symfony\Component\Form\AbstractType;
 use Mautic\CoreBundle\Form\Type\ButtonGroupType;
 use Mautic\EmailBundle\Form\Type\EmailListType;
 use Mautic\LeadBundle\Form\Type\TagType;
+use Mautic\LeadBundle\Form\Type\LeadFieldsType;
 use Mautic\LeadBundle\Form\Type\LeadListType;
 use Symfony\Component\Form\Extension\Core\Type\ButtonType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -206,6 +207,25 @@ class EmailSendType extends AbstractType
             }
 
             $builder->add(
+                'treat_as_confirmed',
+                ChoiceType::class,
+                [
+                    'choices' => [
+                        $this->translator->trans('jw.mautic.success_criteria.status_field') => 'status_field',
+                        $this->translator->trans('jw.mautic.success_criteria.segments') => 'segments',
+                        $this->translator->trans('jw.mautic.success_criteria.tags') => 'tags'
+                    ],
+                    'label'    => $this->translator->trans('jw.mautic.lead.treat_as_confirmed'),
+                    'multiple' => true,
+                    'required' => false,
+                    'attr'     => [
+                        'class'        => 'form-control',
+                        'tooltip'      => $this->translator->trans('jw.mautic.lead.treat_as_confirmed_desc')
+                    ]
+                ]
+            );
+
+            $builder->add(
                 'add_campaign_doi_success_tags',
                 TagType::class,
                 [
@@ -255,7 +275,40 @@ class EmailSendType extends AbstractType
                 ],
                 'multiple' => true,
                 'expanded' => false,
-            ]);            
+            ]);
+
+            $builder->add(
+                'optin_status_field',
+                LeadFieldsType::class,
+                [
+                    'label'               => $this->translator->trans('jw.mautic.lead.optin_status_field'),
+                    'label_attr'          => ['class' => 'control-label'],
+                    'multiple'            => false,
+                    'required'            => false,
+                    'with_company_fields' => false,
+                    'with_tags'           => false,
+                    'with_utm'            => false,
+                    'placeholder'         => 'mautic.core.select',
+                    'attr'                => [
+                        'class'   => 'form-control',
+                        'tooltip' => $this->translator->trans('jw.mautic.lead.optin_status_field_desc')
+                    ]
+                ]
+            );
+
+            $builder->add(
+                'optin_success_value',
+                TextType::class,
+                [
+                    'label'      => $this->translator->trans('jw.mautic.lead.optin_success_value'),
+                    'label_attr' => ['class' => 'control-label'],
+                    'required'   => false,
+                    'attr'       => [
+                        'class'   => 'form-control',
+                        'tooltip' => $this->translator->trans('jw.mautic.lead.optin_success_value_desc')
+                    ]
+                ]
+            );
             
             $builder->add(
                 'post_url',
@@ -280,7 +333,7 @@ class EmailSendType extends AbstractType
                         ),
                     ],
                 ]
-            );   
+            );
             
             $builder->add(
                 'lead_field_update',
