@@ -131,7 +131,7 @@ class FormSubscriber implements EventSubscriberInterface
 
             if( DNC::MANUAL === $reason && $channel=="email" )
             {
-                return false;
+                return true;
             }            
 
         }    
