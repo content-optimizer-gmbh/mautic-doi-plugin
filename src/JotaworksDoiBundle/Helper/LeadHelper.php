@@ -26,16 +26,6 @@ class LeadHelper {
             // we replace tokens if any
             if($leadFieldAlias && $leadFieldValue)
             {
-
-                //if $leadFieldValue is token then replace with current lead field value
-                if( preg_match('/\{.*\}/', $leadFieldValue) )
-                {
-                    $tokenAlias = str_replace(['{','}'],'',$leadFieldValue);
-                    if(isset($leadFields[ $tokenAlias ])) {
-                        $leadFieldValue = $leadFields[$tokenAlias]['normalizedValue'];
-                    }
-                }
-
                 $timestring = date("d.m.Y H:i:s");
                 
                 //generate token 
@@ -44,7 +34,16 @@ class LeadHelper {
                 $leadFieldValue = str_replace('{doi_ip}', $ip, $leadFieldValue);
                 $leadFieldValue = str_replace('{doi_timestamp}', $timestring, $leadFieldValue);
                 $leadFieldValue = str_replace('{tokenid}', $token, $leadFieldValue);
-
+                
+                //if $leadFieldValue is token then replace with current lead field value
+                if( preg_match('/\{.*\}/', $leadFieldValue) )
+                {
+                    $tokenAlias = str_replace(['{','}'],'',$leadFieldValue);
+                    if(isset($leadFields[ $tokenAlias ])) {
+                        $leadFieldValue = $leadFields[$tokenAlias]['normalizedValue'];
+                    }
+                }
+                
                 $leadValues[$leadFieldAlias] = $leadFieldValue;
             }
 
