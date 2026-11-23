@@ -1,5 +1,33 @@
 # CHANGELOG
 
+Version 2.4.0   23.11.2026
+- NEU Einstellbare One-Click-Abmeldung (RFC 8058): Das Plugin fängt den POST „List-Unsubscribe=One-Click“ auf
+  /email/unsubscribe/{idHash}/{urlEmail}/{secretHash} vor Mautics Controller ab und führt die eingestellte Wirkung aus:
+  Sperre (E-Mail-DNC Grund 1 wie Mautic, zusätzlich optin_status = Widerrufen), aus den Segmenten der Mail, aus der
+  Kampagne, die die Mail geschickt hat, oder aus fest gewählten Segmenten. Antwort 200. Alle anderen Aufrufe der
+  Abmelde-Route (Abmeldeseite im Browser) bleiben unverändert.
+- Prüfung: unbekannter idHash → 404, Adresse oder Hash fehlt in der URL → 400, Adresse passt nicht zur Statistik oder
+  falscher Hash → 403.
+- Globaler Standard in der Integration Double-Opt-In (DOI), Reiter Funktionen: „Automatisch“ (Standard: Segment-Mail →
+  aus Segmenten, Kampagnen-Mail → aus Kampagne, sonst Sperre), Sperre, aus Segmenten, aus Kampagne; Ausweichregel
+  (Standard Sperre). Je Mail im Editor, Reiter „Erweitert“, Bereich „Bei Abmeldung“ (Tabelle jw_doi_unsubscribe_rule).
+  Beim Klonen einer Mail wird die Einstellung übernommen.
+- Passt die Wirkung nicht zur Mail, greift die Ausweichregel, sonst die Sperre. Scheitert eine Aktion, sperrt das
+  Plugin; scheitert auch das, übernimmt Mautic selbst. So geht keine Abmeldung verloren.
+- Aus Kampagne: Kampagne aus email_stats.source = campaign.event, sonst (DOI-Aktion doi.email.send, Quelle form/0)
+  aus dem Kampagnenprotokoll des Kontakts (Ereignis mit dieser Mail, ±1 h um den Versand). Entfernt wird wie in der
+  Kontaktansicht (manually_removed = 1 ohne Austrittsdatum): Der Segment-Neuaufbau nimmt den Kontakt nicht wieder auf,
+  ein Formular oder die Aktion „Kampagne ändern“ schon. Quellsegmente (z. B. 439) bleiben unberührt.
+- Aus Segmenten: wie „Aus Segment entfernen“ (manually_removed = 1). War der Kontakt von Hand hinzugefügt, löscht
+  Mautic die Zeile; bei Segmenten mit Filtern schreibt das Plugin dann eine Zeile mit manually_removed = 1, damit der
+  Neuaufbau ihn nicht wieder aufnimmt.
+- Jede One-Click-Abmeldung steht im Kontaktverlauf (lead_event_log, Bundle jwdoi, Aktion oneclick_unsubscribe, mit
+  Wirkung, Ausweichregel, Segmenten bzw. Kampagne und Statistik-ID) und im Mautic-Log.
+- Abmeldekopf: Jede echt versendete Mail mit E-Mail-Objekt bekommt die https-One-Click-Adresse in List-Unsubscribe
+  (vor der mailto-Adresse von Mautic) und einmal „List-Unsubscribe-Post: List-Unsubscribe=One-Click“. Ausgenommen:
+  „An abgemeldete Kontakte senden“, Test-Mails, Vorschau. Der Kern-Patch JOTAWORKS-LISTUNSUB-PATCH ist damit nicht
+  mehr nötig; ist er noch eingespielt, entstehen keine doppelten Einträge.
+
 Version 2.3.0   18.11.2026
 - NEU Köder-Link in allen Mails: Ist der Schutz vor Link-Scannern an, bekommt jede echt versendete Mail (Newsletter,
   Kampagne, Transaktion) einen unsichtbaren, nicht getrackten Link /nothuman/<Statistik-Hash> direkt nach <body>.

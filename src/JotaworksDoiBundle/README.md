@@ -5,6 +5,32 @@ Email-Link“ verschickt eine Bestätigungsmail mit dem Platzhalter `{doi_url}`.
 konfigurierten Aktionen aus (Tags, Segmente, Kontaktfelder, DNC entfernen, Audit-Log, Seitenaufruf, Webhook)
 und leitet auf die Danke-URL weiter.
 
+## One-Click-Abmeldung (ab 2.4.0)
+
+Ein Klick auf „Abbestellen“ im Postfach (Gmail, Apple Mail …) schickt nach RFC 8058 einen POST mit
+`List-Unsubscribe=One-Click` an `/email/unsubscribe/{idHash}/{urlEmail}/{secretHash}`. Mautic sperrt dann den Kontakt für
+alle E-Mails. Das Plugin fängt nur diesen POST ab (`EventListener/OneClickRequestSubscriber.php`) und führt die
+eingestellte Wirkung aus:
+
+| Wirkung | Was passiert |
+|---|---|
+| Sperre | E-Mail-DNC Grund 1 wie Mautic (`EmailModel::setDoNotContact`), `optin_status` = „Widerrufen“ |
+| Aus Segmenten der Mail | nur Segment-Mails: Austragen aus allen Segmenten der Mail (`manually_removed = 1`) |
+| Aus Kampagne | Kontakt aus der Kampagne nehmen, die die Mail geschickt hat (wie „aus Kampagne entfernen“ in der Kontaktansicht) |
+| Aus festen Segmenten | nur je Mail: Austragen aus den gewählten Segmenten |
+
+Einstellung: global in der Integration (Reiter Funktionen, Standard „Automatisch“ und Ausweichregel „Sperre“), je Mail im
+Editor unter „Erweitert“ → „Bei Abmeldung“. Passt die Wirkung nicht, greift die Ausweichregel, danach die Sperre.
+Protokoll: Kontaktverlauf (`lead_event_log`, Bundle `jwdoi`, Aktion `oneclick_unsubscribe`) und Mautic-Log.
+
+Kampagne aus Kampagne entfernen: Der Kontakt bekommt `manually_removed = 1` ohne Austrittsdatum. Der Segment-Neuaufbau
+(`mautic:campaigns:rebuild`) nimmt ihn nicht wieder auf, auch wenn er noch im Quellsegment steht. Ein Formular mit der
+Kampagne als Quelle oder die Kampagnenaktion „Kampagne ändern“ nimmt ihn wieder auf (bei Kampagnen ohne Neustart nur
+dieser Weg). Ein neuer Segmenteintritt allein reicht dafür nicht.
+
+Der Abmeldekopf (`EventListener/ListUnsubscribeHeaderSubscriber.php`) setzt die https-Adresse selbst, auch wenn der
+Mailtext kein `{unsubscribe_url}` enthält.
+
 ## Köder-Link in allen Mails (ab 2.3.0)
 
 Ist der Schutz vor Link-Scannern eingeschaltet, bekommt jede echt versendete Mail (Newsletter, Kampagne,

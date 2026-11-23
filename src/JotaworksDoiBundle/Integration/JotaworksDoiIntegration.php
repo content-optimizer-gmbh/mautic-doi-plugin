@@ -4,6 +4,8 @@ namespace MauticPlugin\JotaworksDoiBundle\Integration;
 
 use Mautic\CoreBundle\Form\Type\YesNoButtonGroupType;
 use Mautic\PluginBundle\Integration\AbstractIntegration;
+use MauticPlugin\JotaworksDoiBundle\Entity\UnsubscribeRule;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Validator\Constraints\Range;
 
@@ -33,6 +35,25 @@ class JotaworksDoiIntegration extends AbstractIntegration
      * only requested the bait link) and must not swallow a later real click.
      */
     public const BAIT_LOOKBACK_SECONDS = 300;
+
+    /** Feature setting (2.4.0): global one-click unsubscribe mode for emails without own rule. */
+    public const FEATURE_ONECLICK_MODE = 'oneclick_mode';
+
+    /** Feature setting (2.4.0): global fallback when the mode does not fit the email. */
+    public const FEATURE_ONECLICK_FALLBACK = 'oneclick_fallback';
+
+    public const ONECLICK_MODES = [
+        UnsubscribeRule::MODE_AUTO,
+        UnsubscribeRule::MODE_BLOCK,
+        UnsubscribeRule::MODE_SEGMENTS,
+        UnsubscribeRule::MODE_CAMPAIGN,
+    ];
+
+    public const ONECLICK_FALLBACKS = [
+        UnsubscribeRule::MODE_BLOCK,
+        UnsubscribeRule::MODE_SEGMENTS,
+        UnsubscribeRule::MODE_CAMPAIGN,
+    ];
 
     public function getName()
     {
@@ -115,5 +136,58 @@ class JotaworksDoiIntegration extends AbstractIntegration
                 ],
             ]
         );
+
+        $builder->add(
+            self::FEATURE_ONECLICK_MODE,
+            ChoiceType::class,
+            [
+                'label'       => 'jw.doi.integration.oneclick.mode',
+                'label_attr'  => ['class' => 'control-label'],
+                'required'    => true,
+                'placeholder' => false,
+                'choices'     => $this->modeChoices(self::ONECLICK_MODES),
+                'data'        => in_array($data[self::FEATURE_ONECLICK_MODE] ?? null, self::ONECLICK_MODES, true)
+                    ? $data[self::FEATURE_ONECLICK_MODE]
+                    : UnsubscribeRule::MODE_AUTO,
+                'attr'        => [
+                    'class'   => 'form-control',
+                    'tooltip' => 'jw.doi.integration.oneclick.mode.tooltip',
+                ],
+            ]
+        );
+
+        $builder->add(
+            self::FEATURE_ONECLICK_FALLBACK,
+            ChoiceType::class,
+            [
+                'label'       => 'jw.doi.integration.oneclick.fallback',
+                'label_attr'  => ['class' => 'control-label'],
+                'required'    => true,
+                'placeholder' => false,
+                'choices'     => $this->modeChoices(self::ONECLICK_FALLBACKS),
+                'data'        => in_array($data[self::FEATURE_ONECLICK_FALLBACK] ?? null, self::ONECLICK_FALLBACKS, true)
+                    ? $data[self::FEATURE_ONECLICK_FALLBACK]
+                    : UnsubscribeRule::MODE_BLOCK,
+                'attr'        => [
+                    'class'   => 'form-control',
+                    'tooltip' => 'jw.doi.integration.oneclick.fallback.tooltip',
+                ],
+            ]
+        );
+    }
+
+    /**
+     * @param string[] $modes
+     *
+     * @return array<string, string> label key => mode
+     */
+    private function modeChoices(array $modes): array
+    {
+        $choices = [];
+        foreach ($modes as $mode) {
+            $choices['jw.doi.unsubscribe.mode.'.$mode] = $mode;
+        }
+
+        return $choices;
     }
 }

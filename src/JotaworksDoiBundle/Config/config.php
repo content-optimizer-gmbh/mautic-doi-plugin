@@ -3,7 +3,7 @@
 return [
     'name'        => 'JotaWorks Double-Opt-In',
     'description' => 'Adds a robust and flexible way to add a double-opt-in process (DOI) to any form in Mautic.',
-    'version'     => '2.3.0',
+    'version'     => '2.4.0',
     'author'      => 'Sebastian Fahrenkrog (Content Optimizer GmbH)',
     'parameters' => [
         // Messenger transport for the delayed DOI confirmation (link scanner protection).
@@ -27,6 +27,43 @@ return [
                 'arguments' => [
                     '@jw.doi.delayed_confirmation',
                     '@jw.doi.email.service',
+                ],
+                'tags'      => ['kernel.event_subscriber']
+            ],
+            // 2.4.0: configurable RFC 8058 one-click unsubscribe
+            'jw.doi.oneclick.request.subscriber' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\EventListener\OneClickRequestSubscriber::class,
+                'arguments' => [
+                    '@jw.doi.oneclick.service',
+                    '@mautic.email.model.email',
+                    '@mautic.helper.core_parameters',
+                    '@translator',
+                    '@monolog.logger.mautic',
+                ],
+                'tags'      => ['kernel.event_subscriber']
+            ],
+            'jw.doi.oneclick.header.subscriber' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\EventListener\ListUnsubscribeHeaderSubscriber::class,
+                'arguments' => [
+                    '@router',
+                    '@mautic.helper.core_parameters',
+                ],
+                'tags'      => ['kernel.event_subscriber']
+            ],
+            'jw.doi.unsubscribe_rule.email.subscriber' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\EventListener\UnsubscribeRuleEmailSubscriber::class,
+                'arguments' => [
+                    '@jw.doi.unsubscribe_rule.store',
+                    '@monolog.logger.mautic',
+                ],
+                'tags'      => ['kernel.event_subscriber']
+            ],
+            'jw.doi.oneclick.timeline.subscriber' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\EventListener\OneClickTimelineSubscriber::class,
+                'arguments' => [
+                    '@doctrine.orm.entity_manager',
+                    '@translator',
+                    '@router',
                 ],
                 'tags'      => ['kernel.event_subscriber']
             ],
@@ -101,6 +138,31 @@ return [
             ]
         ],
         'other' => [
+            // 2.4.0: one-click unsubscribe rules and actions
+            'jw.doi.unsubscribe_rule.store' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\Service\UnsubscribeRuleStore::class,
+                'arguments' => ['@doctrine.orm.entity_manager']
+            ],
+            'jw.doi.oneclick.service' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\Service\OneClickUnsubscribeService::class,
+                'arguments' => [
+                    '@mautic.helper.integration',
+                    '@jw.doi.unsubscribe_rule.store',
+                    '@mautic.email.model.email',
+                    '@mautic.lead.model.lead',
+                    '@mautic.lead.model.field',
+                    '@mautic.campaign.model.campaign',
+                    '@mautic.campaign.membership.manager',
+                    '@doctrine.orm.entity_manager',
+                    '@translator',
+                    '@monolog.logger.mautic',
+                ]
+            ],
+            'jw.doi.form.extension.email_unsubscribe_rule' => [
+                'class'     => \MauticPlugin\JotaworksDoiBundle\Form\Extension\EmailUnsubscribeRuleExtension::class,
+                'arguments' => ['@jw.doi.unsubscribe_rule.store'],
+                'tag'       => 'form.type_extension'
+            ],
             // Link scanner protection (2.2.0): settings check + dispatch of the delayed confirmation
             'jw.doi.delayed_confirmation' => [
                 'class'     => \MauticPlugin\JotaworksDoiBundle\Service\DelayedConfirmationService::class,

@@ -1,0 +1,8 @@
+{# One-click unsubscribe rule of this email (JotaworksDoiBundle 2.4.0) #}
+<div class="jw-doi-unsubscribe-rule mt-lg mb-lg">
+    <h5 class="mb-sm">{{ 'jw.doi.unsubscribe.rule.section'|trans }}</h5>
+    <p class="text-muted small">{{ 'jw.doi.unsubscribe.rule.section.help'|trans }}</p>
+    {{ form_row(form.jw_unsub_mode) }}
+    {{ form_row(form.jw_unsub_segments) }}
+    {{ form_row(form.jw_unsub_fallback) }}
+</div>
