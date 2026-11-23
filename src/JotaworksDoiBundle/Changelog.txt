@@ -1,5 +1,38 @@
 # CHANGELOG
 
+Version 2.3.0   18.11.2026
+- NEU Köder-Link in allen Mails: Ist der Schutz vor Link-Scannern an, bekommt jede echt versendete Mail (Newsletter,
+  Kampagne, Transaktion) einen unsichtbaren, nicht getrackten Link /nothuman/<Statistik-Hash> direkt nach <body>.
+  Das Token {jw_nothuman} liefert dieselbe URL für eigene Vorlagen; steht es in der Mail, wird nichts eingefügt.
+- Die Markierung ist dieselbe wie beim DOI-Köder (doi_<hash>.log, JW_DOI_MARKER_DIR). Ausgewertet wird sie für
+  Klicks vom mautic_docker-Patch scanner-guard: Klicks eines Empfängers, dessen Köder kurz vorher aufgerufen wurde,
+  bleiben als Statistik erhalten, lösen aber keine Entscheidung, Punkte oder Öffnung aus.
+- Test-Mails und die Vorschau bekommen keinen Köder.
+
+Version 2.2.0   16.11.2026
+- NEU Schutz vor Link-Scannern wieder funktionsfähig, jetzt als Einstellung (Standard: aus).
+  In 2.x war die verzögerte Prüfung aus 1.4.x stillgelegt: Die Bestätigung wurde sofort übernommen,
+  der Köder-Link {doi_nothuman} wurde nie ausgewertet.
+- Einstellungen > Plugins > „Double-Opt-In (DOI)“ (neue Integration JotaworksDoi), Reiter Funktionen:
+  „Schutz vor Link-Scannern (verzögerte Bestätigung)“ und „Wartezeit in Sekunden“ (Standard 60).
+- Umsetzung mit Symfony Messenger: Nachricht mit DelayStamp auf dem eigenen Transport jotaworks_doi
+  (Parameter messenger_dsn_jotaworks_doi, Standard sync://). Der Handler verwirft die Bestätigung und
+  setzt die Markierung zurück, wenn der Köder-Link aufgerufen wurde; sonst übernimmt er die DOI-Aktionen
+  mit IP, User-Agent und Referer des menschlichen Klicks (nicht des Workers).
+- Die Weiterleitung auf die Danke-URL erfolgt weiterhin sofort.
+- Voraussetzung bei eingeschalteter Option: asynchroner Transport (z. B. doctrine://default?queue_name=jotaworks_doi)
+  und Worker „bin/console messenger:consume jotaworks_doi“. Siehe README.md.
+- Ausgeschaltet (Standard, auch nach dem Update bestehender Installationen): Verhalten wie 2.1.0.
+- Köder-Markierung mit Zeitfenster: Die Markierung speichert den Zeitpunkt jedes Köder-Aufrufs. Verworfen wird
+  nur, wenn der Köder-Link zwischen Klick − 300 s und Klick + Wartezeit aufgerufen wurde
+  (JotaworksDoiIntegration::BAIT_LOOKBACK_SECONDS). Ältere Aufrufe werden ignoriert und entfernt. Bisher verfiel
+  die Markierung nie: Hatte ein Scanner nur den Köder-Link aufgerufen, wurde der erste echte Klick still verworfen,
+  obwohl die Empfängerin die Danke-Seite sah.
+- Verzögerte Bestätigung: Der Platzhalter {doi_timestamp} in „Kontaktfelder nach Bestätigung“ enthält den Zeitpunkt
+  des Klicks (gleiche Zeitzone und gleiches Format wie bisher), nicht den Zeitpunkt, zu dem der Worker die Aktionen
+  ausführt. Bei ausgeschalteter Option unverändert: Zeitpunkt der Bestätigung = Klick.
+  Datum des Audit-Log-Eintrags und des Seitenaufrufs setzt Mautic selbst, dort steht die Worker-Zeit.
+
 - Cleanup and completition of translations
 
 Version 1.4.0   09.05.2022

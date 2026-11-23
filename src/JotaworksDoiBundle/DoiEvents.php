@@ -41,4 +41,9 @@ final class DoiEvents
      * @var string
      */
     const DOI_SUCCESSFUL = 'mautic.doi_successful';
+
+    /**
+     * Campaign action event when DOI email is triggered.
+     */
+    const ON_CAMPAIGN_TRIGGER_ACTION = 'jotaworks.doi.on.campaign.trigger.action';
 }

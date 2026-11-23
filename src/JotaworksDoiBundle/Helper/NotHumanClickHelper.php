@@ -36,15 +36,111 @@ class NotHumanClickHelper {
     protected function buildFilename($hash) 
     {
         $hash = $this->filter_filename($hash);
-        return $this->pathsHelper->getSystemPath('cache').'/doi_'.$hash.'.log';
+
+        return $this->getMarkerDir().'/doi_'.$hash.'.log';
     }
 
-    public function setClick($hash) 
+    /**
+     * Directory of the bait markers. Default is the Symfony cache dir; JW_DOI_MARKER_DIR moves them
+     * out of it (mautic_docker: one cache per release, so a release switch or cache:clear would drop
+     * markers that web-frontend wrote and the worker still has to read).
+     */
+    protected function getMarkerDir(): string
     {
-        if($hash)
-        {
-            file_put_contents( $this->buildFilename($hash), $hash );
-        }       
+        $dir = getenv('JW_DOI_MARKER_DIR');
+        if ($dir && (is_dir($dir) || @mkdir($dir, 0770, true))) {
+            return rtrim($dir, '/');
+        }
+
+        return $this->pathsHelper->getSystemPath('cache');
+    }
+
+    /** Max. number of bait hit timestamps kept per marker (scanners may hit the link repeatedly). */
+    public const MAX_STORED_HITS = 20;
+
+    /**
+     * Records a request of the bait link. The marker file holds one Unix timestamp per line
+     * (2.2.0); markers written by older versions contain the hash instead and are read via filemtime.
+     */
+    public function setClick($hash)
+    {
+        if (!$hash) {
+            return;
+        }
+
+        $hits   = $this->getHitTimes($hash);
+        $hits[] = time();
+        $this->writeHits($hash, $hits);
+    }
+
+    /**
+     * @return int[] timestamps of the recorded bait hits, oldest first
+     */
+    public function getHitTimes($hash): array
+    {
+        if (!$hash) {
+            return [];
+        }
+
+        $absFilename = $this->buildFilename($hash);
+        if (!is_file($absFilename)) {
+            return [];
+        }
+
+        $content = (string) @file_get_contents($absFilename);
+        $hits    = [];
+        foreach (preg_split('/\R/', trim($content)) as $line) {
+            if (ctype_digit($line)) {
+                $hits[] = (int) $line;
+            }
+        }
+
+        // Legacy marker (content = hash): the file time is the hit time.
+        if (!$hits && '' !== $content) {
+            $mtime = @filemtime($absFilename);
+            $hits  = false !== $mtime ? [$mtime] : [];
+        }
+
+        sort($hits);
+
+        return $hits;
+    }
+
+    /**
+     * True if the bait link was requested within [$from, $to] (inclusive).
+     */
+    public function hasHitBetween($hash, int $from, int $to): bool
+    {
+        foreach ($this->getHitTimes($hash) as $hitAt) {
+            if ($hitAt >= $from && $hitAt <= $to) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Removes all hits up to and including $until; deletes the marker when none are left.
+     *
+     * @return int number of removed hits
+     */
+    public function removeHitsUntil($hash, int $until): int
+    {
+        $hits = $this->getHitTimes($hash);
+        $keep = array_values(array_filter($hits, static fn (int $hitAt): bool => $hitAt > $until));
+
+        if (count($keep) === count($hits)) {
+            return 0;
+        }
+
+        if (!$keep) {
+            $this->reset($hash);
+        } else {
+            $this->writeHits($hash, $keep);
+        }
+
+        return count($hits) - count($keep);
     }
 
     public function isRunning($hash)
@@ -70,6 +166,17 @@ class NotHumanClickHelper {
             unlink( $absFilename );
         } 
         
+    }
+
+    /**
+     * @param int[] $hits
+     */
+    private function writeHits($hash, array $hits): void
+    {
+        sort($hits);
+        $hits = array_slice($hits, -self::MAX_STORED_HITS);
+
+        file_put_contents($this->buildFilename($hash), implode("\n", $hits)."\n", LOCK_EX);
     }
 
 }

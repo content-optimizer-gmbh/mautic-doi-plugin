@@ -9,6 +9,7 @@ use MauticPlugin\JotaworksDoiBundle\Helper\LeadHelper;
 use MauticPlugin\JotaworksDoiBundle\DoiEvents;
 
 
+
 class DoiActionHelper {
 
     protected $eventDispatcher;
@@ -42,10 +43,15 @@ class DoiActionHelper {
         $this->request = $request;
     }    
 
-    public function applyDoiActions($config) 
+    /**
+     * @param \DateTimeInterface|null $confirmedAt time of the human click when applied later by the
+     *                                         Messenger worker; null = now (immediate confirmation)
+     */
+    public function applyDoiActions($config, ?\DateTimeInterface $confirmedAt = null) 
     {
+
         $this->logDoiSuccess($config);            
-        $this->updateLead($config);
+        $this->updateLead($config, $confirmedAt);
         $this->removeDNC($config['leadEmail']);           
         $this->identifyLead($config['lead_id']);          
         $this->trackPageHit($config);
@@ -86,9 +92,10 @@ class DoiActionHelper {
     public function identifyLead($leadId) 
     {
         $clickthrough = ['leadId' => $leadId ];
-    
+
         $event = new ContactIdentificationEvent($clickthrough);
-        $this->eventDispatcher->dispatch(LeadEvents::ON_CLICKTHROUGH_IDENTIFICATION, $event);
+
+        $this->eventDispatcher->dispatch($event, LeadEvents::ON_CLICKTHROUGH_IDENTIFICATION);
     }
 
     public function removeDNC($email)
@@ -110,7 +117,7 @@ class DoiActionHelper {
         $this->auditLogModel->writeToLog($log); 
     }
 
-    public function updateLead($config) {
+    public function updateLead($config, ?\DateTimeInterface $confirmedAt = null) {
 
         $addTags    = (!empty($config['add_tags'])) ? $config['add_tags'] : [];
         $removeTags = (!empty($config['remove_tags'])) ? $config['remove_tags'] : [];            
@@ -130,6 +137,7 @@ class DoiActionHelper {
             $this->leadModel->modifyTags($lead, $addTags, $removeTags);
         }
 
+
         // Add to Lists (if any)
         if (!empty($addTo)) {
             $this->leadModel->addToLists($lead, $addTo);
@@ -137,15 +145,16 @@ class DoiActionHelper {
 
         // Remove from Lists (if any)
         if (!empty($removeFrom)) {
-            $this->leadModel->removeFromLists($lead, $removeFrom);
+    	        $this->leadModel->removeFromLists($lead, $removeFrom);
         }       
 
         //Update lead value (if any)
         if( !empty($leadFieldUpdate) )
         {
             $ip = $this->ipLookupHelper->getIpAddressFromRequest();            
-            LeadHelper::leadFieldUpdate($leadFieldUpdate, $this->leadModel, $lead, $ip );               
+            LeadHelper::leadFieldUpdate($leadFieldUpdate, $this->leadModel, $lead, $ip, $confirmedAt );               
         }
+
     }
 
 }

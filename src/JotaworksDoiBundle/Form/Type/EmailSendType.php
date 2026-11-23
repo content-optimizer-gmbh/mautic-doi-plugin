@@ -12,7 +12,6 @@
 namespace MauticPlugin\JotaworksDoiBundle\Form\Type;
 
 use Mautic\ChannelBundle\Entity\MessageQueue;
-use Mautic\CoreBundle\Factory\MauticFactory;
 use Symfony\Component\Form\AbstractType;
 use Mautic\CoreBundle\Form\Type\ButtonGroupType;
 use Mautic\EmailBundle\Form\Type\EmailListType;
@@ -27,7 +26,8 @@ use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Translation\TranslatorInterface;
+use Mautic\CoreBundle\Translation\Translator;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Constraints\Url;
 
 /**
@@ -35,19 +35,16 @@ use Symfony\Component\Validator\Constraints\Url;
  */
 class EmailSendType extends AbstractType
 {
-    protected $factory;
+    protected $router;
 
     /**
      * @var TranslatorInterface
      */
-    private $translator;    
+    private $translator;
 
-    /**
-     * @param MauticFactory $factory
-     */
-    public function __construct(MauticFactory $factory, TranslatorInterface $translator)
+    public function __construct(UrlGeneratorInterface $router, Translator $translator)
     {
-        $this->factory = $factory;
+        $this->router = $router;
         $this->translator = $translator;
 
     }
@@ -100,7 +97,7 @@ class EmailSendType extends AbstractType
         }
 
         if (!empty($options['update_select'])) {
-            $windowUrl = $this->factory->getRouter()->generate(
+            $windowUrl = $this->router->generate(
                 'mautic_email_action',
                 [
                     'objectAction' => 'new',
@@ -125,7 +122,7 @@ class EmailSendType extends AbstractType
             );
 
             // create button edit email
-            $windowUrlEdit = $this->factory->getRouter()->generate(
+            $windowUrlEdit = $this->router->generate(
                 'mautic_email_action',
                 [
                     'objectAction' => 'edit',
@@ -150,7 +147,7 @@ class EmailSendType extends AbstractType
             );
 
             // create button preview email
-            $windowUrlPreview = $this->factory->getRouter()->generate('mautic_email_preview', ['objectId' => 'emailId']);
+            $windowUrlPreview = $this->router->generate('mautic_email_preview', ['objectId' => 'emailId']);
 
             $builder->add(
                 'previewEmailButton',

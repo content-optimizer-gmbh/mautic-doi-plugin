@@ -1,0 +1,23 @@
+{
+    "name": "jotaworks/mautic-doi-bundle",
+    "description": "Adds a robust and flexible way to add a double-opt-in process (DOI) to any form in Mautic.",
+    "type": "mautic-plugin",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Jotaworks / Sebastian Fahrenkrog"
+        }
+    ],
+    "extra": {
+        "install-directory-name": "JotaworksDoiBundle"
+    },
+    "require": {
+        "php": ">=8.2",
+        "mautic/core-lib": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MauticPlugin\\JotaworksDoiBundle\\": ""
+        }
+    }
+}
