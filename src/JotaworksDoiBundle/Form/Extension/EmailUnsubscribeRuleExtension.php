@@ -7,10 +7,12 @@ namespace MauticPlugin\JotaworksDoiBundle\Form\Extension;
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Form\Type\EmailType;
 use Mautic\LeadBundle\Form\Type\LeadListType;
+use Mautic\LeadBundle\Model\FieldModel;
 use MauticPlugin\JotaworksDoiBundle\Entity\UnsubscribeRule;
 use MauticPlugin\JotaworksDoiBundle\Service\UnsubscribeRuleStore;
 use Symfony\Component\Form\AbstractTypeExtension;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
@@ -26,9 +28,13 @@ class EmailUnsubscribeRuleExtension extends AbstractTypeExtension
     public const FIELD_MODE     = 'jw_unsub_mode';
     public const FIELD_SEGMENTS = 'jw_unsub_segments';
     public const FIELD_FALLBACK = 'jw_unsub_fallback';
+    public const FIELD_LEADFIELD = 'jw_unsub_field';
+    public const FIELD_LEADVALUE = 'jw_unsub_field_value';
 
-    public function __construct(private UnsubscribeRuleStore $rules)
-    {
+    public function __construct(
+        private UnsubscribeRuleStore $rules,
+        private FieldModel $fieldModel,
+    ) {
     }
 
     public static function getExtendedTypes(): iterable
@@ -91,6 +97,37 @@ class EmailUnsubscribeRuleExtension extends AbstractTypeExtension
             'data'        => $rule?->getFallback() ?? UnsubscribeRule::MODE_GLOBAL,
         ]);
 
+        $fieldChoices = [
+            'jw.doi.unsubscribe.field.global' => '',
+            'jw.doi.unsubscribe.field.none'   => UnsubscribeRule::FIELD_NONE,
+        ];
+        foreach ($this->fieldModel->getFieldList(false) as $alias => $label) {
+            $fieldChoices[$label.' ('.$alias.')'] = $alias;
+        }
+        $builder->add(self::FIELD_LEADFIELD, ChoiceType::class, [
+            'mapped'      => false,
+            'required'    => false,
+            'label'       => 'jw.doi.unsubscribe.rule.field',
+            'label_attr'  => ['class' => 'control-label'],
+            'attr'        => ['class' => 'form-control', 'tooltip' => 'jw.doi.unsubscribe.rule.field.tooltip'],
+            'placeholder' => false,
+            'choices'     => $fieldChoices,
+            'data'        => $rule?->getFieldAlias() ?? '',
+        ]);
+
+        $builder->add(self::FIELD_LEADVALUE, TextType::class, [
+            'mapped'     => false,
+            'required'   => false,
+            'label'      => 'jw.doi.unsubscribe.rule.field_value',
+            'label_attr' => ['class' => 'control-label'],
+            'attr'       => [
+                'class'        => 'form-control',
+                'tooltip'      => 'jw.doi.unsubscribe.rule.field_value.tooltip',
+                'data-hide-on' => '{"emailform_'.self::FIELD_LEADFIELD.'":["","'.UnsubscribeRule::FIELD_NONE.'"]}',
+            ],
+            'data'       => $rule?->getFieldValue() ?? '',
+        ]);
+
         // Only a request that carries the section changes the rule (API calls without it do not).
         $present = false;
         $builder->addEventListener(FormEvents::PRE_SUBMIT, static function (FormEvent $event) use (&$present): void {
@@ -106,7 +143,9 @@ class EmailUnsubscribeRuleExtension extends AbstractTypeExtension
             $this->rules->remember($email, [
                 'mode'     => (string) $form->get(self::FIELD_MODE)->getData(),
                 'segments' => array_map('intval', (array) $form->get(self::FIELD_SEGMENTS)->getData()),
-                'fallback' => (string) $form->get(self::FIELD_FALLBACK)->getData(),
+                'fallback'    => (string) $form->get(self::FIELD_FALLBACK)->getData(),
+                'field_alias' => (string) $form->get(self::FIELD_LEADFIELD)->getData(),
+                'field_value' => trim((string) $form->get(self::FIELD_LEADVALUE)->getData()),
             ]);
         });
     }

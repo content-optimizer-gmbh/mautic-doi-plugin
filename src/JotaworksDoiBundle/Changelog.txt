@@ -1,5 +1,28 @@
 # CHANGELOG
 
+Version 2.4.1   23.11.2026
+- GEÄNDERT Standard ohne Einstellung an der Mail ist jetzt die Sperre (vorher „Automatisch“). „Automatisch“ bleibt
+  wählbar. Installationen ohne gespeicherte Einstellung sperren also wie Mautic.
+- NEU Doppelklicks und erledigte Abmeldungen lösen nichts mehr aus („already_applied“): Steht der Kontakt in keinem
+  der Zielsegmente mehr, ist er kein aktives Mitglied der Kampagne mehr oder hat er schon eine E-Mail-Sperre Grund 1,
+  passiert nichts – keine Ausweichregel, keine Sperre, keine zweite DNC-Zeile, kein erneutes Setzen des Leadfelds.
+  Im Kontaktverlauf steht ein Eintrag; ein gleicher Eintrag für dieselbe Statistik innerhalb von 24 h wird nicht
+  wiederholt. Das gilt auch für eine Segment-Mail an jemanden, der nicht (mehr) im Segment steht.
+- Die Ausweichregel greift nur noch, wenn die Wirkung zur Mail gar nicht passt (keine Segment-Mail, keine Kampagne
+  gefunden, keine festen Segmente gewählt).
+- NEU „Leadfeld setzen“ (global im Reiter Funktionen und je Mail unter „Bei Abmeldung“): Kontaktfeld und Wert, die bei
+  jeder ausgeführten Abmeldung gesetzt werden, in jeder Wirkung, vor der Sperre. Die Einstellung der Mail geht vor;
+  „Kein Feld setzen“ an der Mail schaltet das globale Feld ab; leerer Wert = kein Feld. Wird mit der Mail geklont.
+  Nimmt Mautic den Wert nicht an (z. B. keine Option eines Auswahlfelds), steht das im Log und im Kontaktverlauf.
+  Neue Spalten field_alias/field_value in jw_doi_unsubscribe_rule (Migration Version_2_4_1).
+- ENTFERNT Das fest eingebaute Setzen von optin_status = Widerrufen bei der Sperre. Dafür jetzt „Leadfeld setzen“
+  konfigurieren.
+- Scheitert eine Aktion, sperrt das Plugin weiterhin. Hat Doctrine dabei den EntityManager geschlossen, setzt das Plugin
+  ihn über die Registry zurück, lädt die Statistik neu und sperrt im selben Aufruf (ohne Leadfeld). Sonst verwirft es
+  offene Änderungen und sperrt ebenso.
+- Hinweis zum Update: Doctrine-Metadaten-Cache leeren (bin/console doctrine:cache:clear-metadata als Site-User) und
+  PHP-FPM neu starten. Sonst kennt Doctrine die neuen Spalten nicht und speichert das Leadfeld an der Mail nicht.
+
 Version 2.4.0   23.11.2026
 - NEU Einstellbare One-Click-Abmeldung (RFC 8058): Das Plugin fängt den POST „List-Unsubscribe=One-Click“ auf
   /email/unsubscribe/{idHash}/{urlEmail}/{secretHash} vor Mautics Controller ab und führt die eingestellte Wirkung aus:

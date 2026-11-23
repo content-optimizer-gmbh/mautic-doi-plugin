@@ -3,7 +3,7 @@
 return [
     'name'        => 'JotaWorks Double-Opt-In',
     'description' => 'Adds a robust and flexible way to add a double-opt-in process (DOI) to any form in Mautic.',
-    'version'     => '2.4.0',
+    'version'     => '2.4.1',
     'author'      => 'Sebastian Fahrenkrog (Content Optimizer GmbH)',
     'parameters' => [
         // Messenger transport for the delayed DOI confirmation (link scanner protection).
@@ -154,13 +154,14 @@ return [
                     '@mautic.campaign.model.campaign',
                     '@mautic.campaign.membership.manager',
                     '@doctrine.orm.entity_manager',
+                    '@doctrine',
                     '@translator',
                     '@monolog.logger.mautic',
                 ]
             ],
             'jw.doi.form.extension.email_unsubscribe_rule' => [
                 'class'     => \MauticPlugin\JotaworksDoiBundle\Form\Extension\EmailUnsubscribeRuleExtension::class,
-                'arguments' => ['@jw.doi.unsubscribe_rule.store'],
+                'arguments' => ['@jw.doi.unsubscribe_rule.store', '@mautic.lead.model.field'],
                 'tag'       => 'form.type_extension'
             ],
             // Link scanner protection (2.2.0): settings check + dispatch of the delayed confirmation

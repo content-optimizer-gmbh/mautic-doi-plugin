@@ -7,6 +7,7 @@ use Mautic\PluginBundle\Integration\AbstractIntegration;
 use MauticPlugin\JotaworksDoiBundle\Entity\UnsubscribeRule;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Validator\Constraints\Range;
 
 /**
@@ -42,9 +43,15 @@ class JotaworksDoiIntegration extends AbstractIntegration
     /** Feature setting (2.4.0): global fallback when the mode does not fit the email. */
     public const FEATURE_ONECLICK_FALLBACK = 'oneclick_fallback';
 
+    /** Feature setting (2.4.1): contact field set on every performed one-click unsubscribe ('' = none). */
+    public const FEATURE_ONECLICK_FIELD = 'oneclick_field';
+
+    /** Feature setting (2.4.1): value for that field. */
+    public const FEATURE_ONECLICK_FIELD_VALUE = 'oneclick_field_value';
+
     public const ONECLICK_MODES = [
-        UnsubscribeRule::MODE_AUTO,
         UnsubscribeRule::MODE_BLOCK,
+        UnsubscribeRule::MODE_AUTO,
         UnsubscribeRule::MODE_SEGMENTS,
         UnsubscribeRule::MODE_CAMPAIGN,
     ];
@@ -148,7 +155,7 @@ class JotaworksDoiIntegration extends AbstractIntegration
                 'choices'     => $this->modeChoices(self::ONECLICK_MODES),
                 'data'        => in_array($data[self::FEATURE_ONECLICK_MODE] ?? null, self::ONECLICK_MODES, true)
                     ? $data[self::FEATURE_ONECLICK_MODE]
-                    : UnsubscribeRule::MODE_AUTO,
+                    : UnsubscribeRule::MODE_BLOCK,
                 'attr'        => [
                     'class'   => 'form-control',
                     'tooltip' => 'jw.doi.integration.oneclick.mode.tooltip',
@@ -171,6 +178,42 @@ class JotaworksDoiIntegration extends AbstractIntegration
                 'attr'        => [
                     'class'   => 'form-control',
                     'tooltip' => 'jw.doi.integration.oneclick.fallback.tooltip',
+                ],
+            ]
+        );
+
+        $fieldChoices = ['jw.doi.unsubscribe.field.none' => ''];
+        foreach ($this->fieldModel->getFieldList(false) as $alias => $label) {
+            $fieldChoices[$label.' ('.$alias.')'] = $alias;
+        }
+        $builder->add(
+            self::FEATURE_ONECLICK_FIELD,
+            ChoiceType::class,
+            [
+                'label'       => 'jw.doi.integration.oneclick.field',
+                'label_attr'  => ['class' => 'control-label'],
+                'required'    => false,
+                'placeholder' => false,
+                'choices'     => $fieldChoices,
+                'data'        => (string) ($data[self::FEATURE_ONECLICK_FIELD] ?? ''),
+                'attr'        => [
+                    'class'   => 'form-control',
+                    'tooltip' => 'jw.doi.integration.oneclick.field.tooltip',
+                ],
+            ]
+        );
+
+        $builder->add(
+            self::FEATURE_ONECLICK_FIELD_VALUE,
+            TextType::class,
+            [
+                'label'      => 'jw.doi.integration.oneclick.field_value',
+                'label_attr' => ['class' => 'control-label'],
+                'required'   => false,
+                'data'       => (string) ($data[self::FEATURE_ONECLICK_FIELD_VALUE] ?? ''),
+                'attr'       => [
+                    'class'   => 'form-control',
+                    'tooltip' => 'jw.doi.integration.oneclick.field_value.tooltip',
                 ],
             ]
         );

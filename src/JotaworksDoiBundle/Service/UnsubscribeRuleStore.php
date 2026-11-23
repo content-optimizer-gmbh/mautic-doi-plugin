@@ -14,7 +14,7 @@ use MauticPlugin\JotaworksDoiBundle\Entity\UnsubscribeRule;
  */
 class UnsubscribeRuleStore
 {
-    /** @var array<int, array{mode: string, segments: int[], fallback: string}> keyed by spl_object_id of the email */
+    /** @var array<int, array{mode: string, segments: int[], fallback: string, field_alias?: string, field_value?: string}> keyed by spl_object_id of the email */
     private array $pending = [];
 
     public function __construct(private EntityManagerInterface $em)
@@ -31,7 +31,7 @@ class UnsubscribeRuleStore
     }
 
     /**
-     * @param array{mode: string, segments: int[], fallback: string} $values
+     * @param array{mode: string, segments: int[], fallback: string, field_alias?: string, field_value?: string} $values
      */
     public function remember(Email $email, array $values): void
     {
@@ -39,7 +39,7 @@ class UnsubscribeRuleStore
     }
 
     /**
-     * @return array{mode: string, segments: int[], fallback: string}|null
+     * @return array{mode: string, segments: int[], fallback: string, field_alias?: string, field_value?: string}|null
      */
     public function takePending(Email $email): ?array
     {
@@ -53,7 +53,7 @@ class UnsubscribeRuleStore
     /**
      * Stores the rule; a rule that only repeats the global settings removes the row.
      *
-     * @param array{mode: string, segments: int[], fallback: string} $values
+     * @param array{mode: string, segments: int[], fallback: string, field_alias?: string, field_value?: string} $values
      */
     public function save(int $emailId, array $values): void
     {
@@ -63,6 +63,9 @@ class UnsubscribeRuleStore
         $rule->setMode($values['mode'])
             ->setSegmentIds(UnsubscribeRule::MODE_FIXED_SEGMENTS === $values['mode'] ? $values['segments'] : [])
             ->setFallback($values['fallback'])
+            ->setFieldAlias((string) ($values['field_alias'] ?? ''))
+            ->setFieldValue('' === (string) ($values['field_alias'] ?? '') || UnsubscribeRule::FIELD_NONE === ($values['field_alias'] ?? '')
+                ? '' : (string) ($values['field_value'] ?? ''))
             ->touch();
 
         if ($rule->isEmpty()) {
@@ -89,7 +92,9 @@ class UnsubscribeRuleStore
         $this->save($toEmailId, [
             'mode'     => $source->getMode(),
             'segments' => $source->getSegmentIds(),
-            'fallback' => $source->getFallback(),
+            'fallback'    => $source->getFallback(),
+            'field_alias' => $source->getFieldAlias(),
+            'field_value' => $source->getFieldValue(),
         ]);
 
         return true;

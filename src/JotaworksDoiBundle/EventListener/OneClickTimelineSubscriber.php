@@ -64,6 +64,15 @@ class OneClickTimelineSubscriber implements EventSubscriberInterface
             if (!empty($props['fallback_used'])) {
                 $label .= ' '.$this->translator->trans('jw.doi.unsubscribe.timeline.fallback');
             }
+            if ('already_applied' === ($props['result'] ?? null)) {
+                $label .= ' '.$this->translator->trans('jw.doi.unsubscribe.timeline.already');
+            }
+            if (!empty($props['field']) && null !== ($props['field_value'] ?? null)) {
+                $label .= ' '.$this->translator->trans('jw.doi.unsubscribe.timeline.field', [
+                    '%field%' => $props['field'],
+                    '%value%' => $props['field_value'],
+                ]);
+            }
             $event->addEvent([
                 'event'      => self::EVENT_TYPE,
                 'eventId'    => self::EVENT_TYPE.$row['id'],

@@ -24,6 +24,9 @@ class UnsubscribeRule
     public const MODE_CAMPAIGN       = 'campaign';
     public const MODE_FIXED_SEGMENTS = 'fixed_segments';
 
+    /** Field setting of an email rule: do not set any contact field, even if one is set globally. */
+    public const FIELD_NONE = '-';
+
     private int $emailId;
 
     private string $mode = self::MODE_GLOBAL;
@@ -32,6 +35,11 @@ class UnsubscribeRule
     private array $segmentIds = [];
 
     private string $fallback = self::MODE_GLOBAL;
+
+    /** '' = as set globally, FIELD_NONE = none, else contact field alias (2.4.1) */
+    private string $fieldAlias = '';
+
+    private string $fieldValue = '';
 
     private \DateTimeInterface $dateAdded;
 
@@ -58,6 +66,8 @@ class UnsubscribeRule
         $builder->addNamedField('mode', Types::STRING, 'mode');
         $builder->addNamedField('segmentIds', Types::JSON, 'segment_ids');
         $builder->addNamedField('fallback', Types::STRING, 'fallback');
+        $builder->addNamedField('fieldAlias', Types::STRING, 'field_alias');
+        $builder->addNamedField('fieldValue', Types::STRING, 'field_value');
         $builder->addNamedField('dateAdded', Types::DATETIME_MUTABLE, 'date_added');
         $builder->addNamedField('dateModified', Types::DATETIME_MUTABLE, 'date_modified');
     }
@@ -109,6 +119,30 @@ class UnsubscribeRule
         return $this;
     }
 
+    public function getFieldAlias(): string
+    {
+        return $this->fieldAlias;
+    }
+
+    public function setFieldAlias(string $fieldAlias): self
+    {
+        $this->fieldAlias = $fieldAlias;
+
+        return $this;
+    }
+
+    public function getFieldValue(): string
+    {
+        return $this->fieldValue;
+    }
+
+    public function setFieldValue(string $fieldValue): self
+    {
+        $this->fieldValue = $fieldValue;
+
+        return $this;
+    }
+
     public function getDateAdded(): \DateTimeInterface
     {
         return $this->dateAdded;
@@ -129,6 +163,7 @@ class UnsubscribeRule
     /** True when the rule only repeats the global settings and needs no row. */
     public function isEmpty(): bool
     {
-        return self::MODE_GLOBAL === $this->mode && self::MODE_GLOBAL === $this->fallback && [] === $this->segmentIds;
+        return self::MODE_GLOBAL === $this->mode && self::MODE_GLOBAL === $this->fallback && [] === $this->segmentIds
+            && '' === $this->fieldAlias;
     }
 }

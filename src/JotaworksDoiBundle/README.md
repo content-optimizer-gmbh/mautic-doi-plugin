@@ -12,24 +12,39 @@ Ein Klick auf „Abbestellen“ im Postfach (Gmail, Apple Mail …) schickt nach
 alle E-Mails. Das Plugin fängt nur diesen POST ab (`EventListener/OneClickRequestSubscriber.php`) und führt die
 eingestellte Wirkung aus:
 
-| Wirkung | Was passiert |
-|---|---|
-| Sperre | E-Mail-DNC Grund 1 wie Mautic (`EmailModel::setDoNotContact`), `optin_status` = „Widerrufen“ |
-| Aus Segmenten der Mail | nur Segment-Mails: Austragen aus allen Segmenten der Mail (`manually_removed = 1`) |
-| Aus Kampagne | Kontakt aus der Kampagne nehmen, die die Mail geschickt hat (wie „aus Kampagne entfernen“ in der Kontaktansicht) |
-| Aus festen Segmenten | nur je Mail: Austragen aus den gewählten Segmenten |
+| Wirkung | Was passiert | „bereits erledigt“, wenn … |
+|---|---|---|
+| Sperre (Standard) | E-Mail-DNC Grund 1 wie Mautic (`EmailModel::setDoNotContact`) | schon eine E-Mail-Sperre Grund 1 besteht |
+| Aus Segmenten der Mail | nur Segment-Mails: Austragen aus den Segmenten der Mail (`manually_removed = 1`) | der Kontakt in keinem davon (mehr) steht |
+| Aus Kampagne | Kontakt aus der Kampagne nehmen, die die Mail geschickt hat | er kein aktives Mitglied mehr ist |
+| Aus festen Segmenten | nur je Mail: Austragen aus den gewählten Segmenten | er in keinem davon (mehr) steht |
+| Automatisch | Segment-Mail → aus Segmenten, Kampagnen-Mail → aus Kampagne, sonst Sperre | wie die gewählte Wirkung |
 
-Einstellung: global in der Integration (Reiter Funktionen, Standard „Automatisch“ und Ausweichregel „Sperre“), je Mail im
-Editor unter „Erweitert“ → „Bei Abmeldung“. Passt die Wirkung nicht, greift die Ausweichregel, danach die Sperre.
-Protokoll: Kontaktverlauf (`lead_event_log`, Bundle `jwdoi`, Aktion `oneclick_unsubscribe`) und Mautic-Log.
+Einstellung: global in der Integration (Reiter Funktionen, Standard „Sperre“, Ausweichregel „Sperre“), je Mail im Editor
+unter „Erweitert“ → „Bei Abmeldung“. Die Einstellung der Mail geht vor.
 
-Kampagne aus Kampagne entfernen: Der Kontakt bekommt `manually_removed = 1` ohne Austrittsdatum. Der Segment-Neuaufbau
+- **Bereits erledigt** (Doppelklick, Kontakt nicht mehr im Segment …): keine Aktion, keine Ausweichregel, nur ein Eintrag
+  im Kontaktverlauf (`result = already_applied`, höchstens einer je Statistik und 24 h).
+- **Ausweichregel** nur, wenn die Wirkung zur Mail nicht passt (keine Segment-Mail, keine Kampagne gefunden, keine festen
+  Segmente). Passt auch die Ausweichregel nicht, wird gesperrt.
+- **Leadfeld setzen** (global und je Mail): Feld und Wert werden bei jeder ausgeführten Abmeldung gesetzt, vor der Sperre,
+  nie bei „bereits erledigt“. An der Mail: „Wie global eingestellt“, „Kein Feld setzen“ oder ein Feld. Leerer Wert = kein
+  Feld. Beispiel gemeinsam.fpoe.at: `optin_status` = `Widerrufen` nur an Mails mit Sperre.
+- **Fehler:** Scheitert eine Aktion, wird gesperrt (ohne Leadfeld). Hat Doctrine den EntityManager geschlossen, setzt das
+  Plugin ihn zurück und lädt die Statistik neu. Scheitert auch das, übernimmt Mautics eigener Controller.
+- **Protokoll:** Kontaktverlauf (`lead_event_log`, Bundle `jwdoi`, Aktion `oneclick_unsubscribe`, mit Wirkung, Ergebnis,
+  Ausweichregel, Segmenten bzw. Kampagne, Leadfeld) und Mautic-Log (Notice).
+
+Aus Kampagne entfernen: Der Kontakt bekommt `manually_removed = 1` ohne Austrittsdatum. Der Segment-Neuaufbau
 (`mautic:campaigns:rebuild`) nimmt ihn nicht wieder auf, auch wenn er noch im Quellsegment steht. Ein Formular mit der
 Kampagne als Quelle oder die Kampagnenaktion „Kampagne ändern“ nimmt ihn wieder auf (bei Kampagnen ohne Neustart nur
 dieser Weg). Ein neuer Segmenteintritt allein reicht dafür nicht.
 
 Der Abmeldekopf (`EventListener/ListUnsubscribeHeaderSubscriber.php`) setzt die https-Adresse selbst, auch wenn der
 Mailtext kein `{unsubscribe_url}` enthält.
+
+**Update:** nach `mautic:plugins:reload` den Doctrine-Metadaten-Cache leeren (`bin/console doctrine:cache:clear-metadata`
+als Site-User) und PHP-FPM neu starten, sonst fehlen neue Spalten in den Metadaten.
 
 ## Köder-Link in allen Mails (ab 2.3.0)
 
