@@ -1,5 +1,11 @@
 # CHANGELOG
 
+Version 2.5.0   24.11.2026
+- NEU Das Ereignis mautic.doi_successful (DoiSuccessful) liefert zusätzlich Formular-ID und Einsendungs-ID
+  (getFormId(), getSubmissionId(), beide nullable int). Die Einsendungs-ID steht ab jetzt verschlüsselt im
+  Bestätigungslink (submission_id). Links aus älteren Versionen liefern null. Bestehende Listener laufen
+  unverändert (Konstruktor-Argumente optional, $lead und $config bleiben öffentlich).
+
 Version 2.4.1   23.11.2026
 - GEÄNDERT Standard ohne Einstellung an der Mail ist jetzt die Sperre (vorher „Automatisch“). „Automatisch“ bleibt
   wählbar. Installationen ohne gespeicherte Einstellung sperren also wie Mautic.

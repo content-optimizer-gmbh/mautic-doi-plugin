@@ -66,7 +66,10 @@ class DoiActionHelper {
             return;
         }
                 
-        $doiEvent = new DoiSuccessful($lead, $config);
+        $formId       = isset($config['form_id']) && (int) $config['form_id'] > 0 ? (int) $config['form_id'] : null;
+        $submissionId = isset($config['submission_id']) && (int) $config['submission_id'] > 0 ? (int) $config['submission_id'] : null;
+
+        $doiEvent = new DoiSuccessful($lead, $config, $formId, $submissionId);
         $this->eventDispatcher->dispatch($doiEvent, DoiEvents::DOI_SUCCESSFUL);
     }
 

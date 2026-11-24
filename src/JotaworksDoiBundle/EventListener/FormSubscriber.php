@@ -71,6 +71,8 @@ class FormSubscriber implements EventSubscriberInterface
             'removeFromLists' => $config['remove_campaign_doi_success_lists'] ?? [],
             'leadFieldUpdate' => $config['lead_field_update'] ?? '',
             'form_id' => $formId,
+            // 2.5.0: lets DOI_SUCCESSFUL listeners find the exact submission
+            'submission_id' => $submissionId,
             'hash' => md5(uniqid()),
         ];
 

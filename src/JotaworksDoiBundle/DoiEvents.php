@@ -36,7 +36,12 @@ final class DoiEvents
      *     'addToLists',
      *     'removeFromLists',
      *     'leadFieldUpdate',
+     *     'form_id',
+     *     'submission_id',   // since 2.5.0
      * ];
+     *
+     * Since 2.5.0 DoiSuccessful::getFormId() and ::getSubmissionId() return both IDs
+     * (null for links sent before 2.5.0).
      *
      * @var string
      */
