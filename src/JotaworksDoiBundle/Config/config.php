@@ -3,7 +3,7 @@
 return [
     'name'        => 'JotaWorks Double-Opt-In',
     'description' => 'Adds a robust and flexible way to add a double-opt-in process (DOI) to any form in Mautic.',
-    'version'     => '2.5.0',
+    'version'     => '2.5.1',
     'author'      => 'Sebastian Fahrenkrog (Content Optimizer GmbH)',
     'parameters' => [
         // Messenger transport for the delayed DOI confirmation (link scanner protection).

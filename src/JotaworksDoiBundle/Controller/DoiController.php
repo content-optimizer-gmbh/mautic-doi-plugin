@@ -133,8 +133,18 @@ class DoiController extends AbstractFormController
             $this->doiActionHelper->applyDoiActions($config);
         }
 
+        // Without a success URL in the DOI action a redirect would fail ("Cannot redirect to an empty URL", 500)
+        // after the confirmation was already applied; show a plain confirmation page instead.
+        $url = trim((string) ($config['url'] ?? ''));
+        if ('' === $url) {
+            return $this->delegateView([
+                'viewParameters'  => [],
+                'contentTemplate' => '@JotaworksDoi/Doi/confirmed.html.twig',
+            ]);
+        }
+
         //redirect to doi success url
-        return $this->redirect($config['url'], 301);
+        return $this->redirect($url, 301);
     }
 
     /**
